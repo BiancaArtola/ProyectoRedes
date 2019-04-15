@@ -1,0 +1,23 @@
+
+
+El formato de la consulta es:
+
+--> query consulta @servidor[:puerto] [-a | -mx | -loc] [-r | -t] [-h]
+
+Los parametros opcionales que se pueden ingresar son:
+
+--> consulta: Consulta que se desea resolver.
+
+-->@servidor: Servidor DNS por el cual se desea resolver la consulta.
+-->[:puerto]: Permite indicar que el servidor contra el cual se resolvera la consulta
+no esta ligado al puerto DNS estandar. Solo se debe especificar si se especifico un servidor.
+
+-->-a: La consulta se trata de un nombre simbolico. Se desea conocer su correspondiente IP numerico asociado.
+-->-mx: Se desea determinar el servidor a cargo de la recepcion de correo electronico para el dominio indicado en la consulta.
+-->-loc: Se desea recuperar la informacion relativa a la ubicacion geografica del dominio indicado en la consulta.
+
+-->-r: Se solicita que la consulta obtenga el bit recursion desired activad.
+-->-t: Se solicita que la consulta se resuelva iterativamente, mostrando una traza con la evolucion de la misma.
+
+IMPORTANTE: Recordar que las opciones entre corchetes ([]) resultan opcionales, y las separadas por la barra vertical (|) son alternativas excluyentes.
+
