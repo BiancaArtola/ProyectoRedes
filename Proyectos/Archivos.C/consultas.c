@@ -11,34 +11,27 @@ struct parametrosConsulta {
 	char* tipoResolucionConsulta;
 };
 
-int *evaluarCantidadParametros(char *puntero){
-	int cantidad = -1 ;
-	char* delimitador = " ";
-	char* auxPuntero = &puntero;
-	while (*auxPuntero != NULL ){
-		*auxPuntero= strtok(NULL, delimitador);
-		cantidad++;
-	}
-	if (cantidad > 3){
-		printf("ERROR en el ingreso de la consulta.");
-		return 0; //ERROR
-	}
-	else return cantidad; //Cantidad de parametros correcta
+int contar(char cadena[]){
+	int cantidadTotal = strlen(cadena);
+	int cantPalabras = 1;
+	int i;
+	for (i=0 ; i<cantidadTotal;i++)
+		if (cadena[i]==' ') cantPalabras++;
+	return cantPalabras;
 }
 
-void *evaluarConsulta(char *puntero){
-	printf("Puntero2: %s \n",puntero);
-	int cantidadParametros = evaluarCantidadParametros(puntero);
-	if (cantidadParametros > 0){
-		printf("Cantidad parametros: %i \n",cantidadParametros);		
-		printf("Puntero: %s \n",(puntero));
-		char* delimitador = " ";
-		while (puntero != NULL ){		
-			puntero= strtok(NULL, delimitador);
-			printf("Puntero: %s \n",(puntero));
-			char* auxiliarParametro= puntero;
-			printf("aux: %s \n",auxiliarParametro);
-			//evaluarParametro(auxiliarParametro);
+char* agarrar(char cadena[], int comienzo){
+	char palabra[20]="";
+	int boolean = 0;
+	int i =0;
+	int total = strlen(cadena);
+	int contador=0;
+	for (i=comienzo;i< total && boolean==0;i++){
+		if (cadena[i]!=' '){
+			palabra[contador]=cadena[i];			
+			contador++;
 		}
+		else boolean=1;		
 	}
+	return palabra;
 }

@@ -6,5 +6,4 @@
 #define MAX_STRING 100
 
 struct parametrosConsulta;
-
-void *evaluarConsulta(char *puntero);
+char* agarrar(char cadena[], int comienzo);
