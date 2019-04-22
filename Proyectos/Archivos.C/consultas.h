@@ -6,4 +6,4 @@
 #define MAX_STRING 100
 
 struct parametrosConsulta;
-char* agarrar(char cadena[], int comienzo);
+void evaluarParametros(char* argv[], int argc);
