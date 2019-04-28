@@ -6,9 +6,6 @@ int iniciarDNS(unsigned char consulta[])
     unsigned char* hostname;
     hostname = consulta;
      
-    printf("/n \n SERVIDOR %s", dns_servers[0]);
-    //Lo vamos a asignar nosotras por defecto
-    printf("Esta es la consulta %s", hostname);
     //Now get the ip of this hostname , A record
     ngethostbyname(hostname , T_A);
  
