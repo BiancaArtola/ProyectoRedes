@@ -1,7 +1,6 @@
 #include "consultas.h"
+#include "dns.h"
 #include <stdio.h>
-#define SERVIDOR_DEFECTO "12"
-#define PUERTO_DEFECTO "80"
 #define TIPOCONSULTA_DEFECTO "-a"
 #define TIPORESOLUCION_DEFECTO "-r"
 #define PUERTO_DEFECTO 80
@@ -13,20 +12,20 @@ struct parametrosConsulta {
 	char* tipoResolucionConsulta;
 }parametros;
 
-int asignarServidor(char* argv[], int cantParametros){
+int leerServidor(char* argv[], int cantParametros){
 	//Retorna 0 si el servidor fue asignado. 1 en caso contrario.
 	char* parametroServidor;
 	if (cantParametros > 3){
 		parametroServidor = argv[3];
 		if (parametroServidor[0] == '@'){
-			parametros.servidor = parametroServidor;
+			parametros.servidor = parametroServidor+1;
 			asignarPuerto(parametroServidor);
 			return 0;
 		}
 	}
 	/*Si el usuario no ingreso servidor (ni puerto) se le asigna los valores por defecto */
-	parametros.servidor = SERVIDOR_DEFECTO;
-	parametros.puerto = PUERTO_DEFECTO;
+	parametros.servidor = "";
+	parametros.puerto = "";
 	return 1;
 }
 
@@ -65,18 +64,20 @@ void asignarPuerto(char parametroServidor[]){
 
 int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int comienzoParametros){
 	int i;
+	parametros.tipoConsulta = "";
+	parametros.tipoResolucionConsulta = "";
 	for (i = comienzoParametros; i<cantParametros ; i++){
 		if ((strcmp(parametrosFinales[i], "-a") == 0) || 
 			(strcmp(parametrosFinales[i], "-mx") == 0) ||
 			(strcmp(parametrosFinales[i], "-loc") == 0)){
-				if (parametros.tipoConsulta != "")
+				if (parametros.tipoConsulta == "")
 					parametros.tipoConsulta = parametrosFinales[i];
 				else
 					return 0;
 			}
 		else if ((strcmp(parametrosFinales[i], "-r") == 0) ||	
 				(strcmp(parametrosFinales[i], "-t") == 0)) {
-					if (parametros.tipoResolucionConsulta != "")
+					if (parametros.tipoResolucionConsulta == "")
 						parametros.tipoResolucionConsulta = parametrosFinales[i];
 					else
 						return 0;
@@ -88,7 +89,7 @@ int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int 
 }
 
 void evaluarParametros(char* argv[], int argc){
-	int servidorAsignado = asignarServidor(argv, argc);
+	int servidorAsignado = leerServidor(argv, argc);
 	printf("servidor: %s cant parametros: %i puerto: %c servAsignado: %i", 
 	parametros.servidor, argc, parametros.puerto, servidorAsignado);
 	int parametrosAsignados=0;
@@ -99,13 +100,13 @@ void evaluarParametros(char* argv[], int argc){
 		parametrosAsignados = evaluarParametrosFinales(argv, argc, 4);
 	else if (servidorAsignado==1 && argc>3)
 		parametrosAsignados = evaluarParametrosFinales(argv, argc, 3);
-	else if (servidorAsignado==1 && argc==3)
+	else if ((servidorAsignado==1 && argc==3) || (servidorAsignado==0 && argc==4))
 		parametrosAsignados = 1;
 		
 	if (parametrosAsignados == 0)
 		printf("Los parametros ingresados son INCORRECTOS. Por favor chequee su entrada.");
-	else {		
-		printf("Primer tipo %s \n", parametros.tipoConsulta);
-		printf("Sgdo tipo %s \n", parametros.tipoResolucionConsulta);
+	else {
+		asignarServidorDNS(parametros.servidor);
+		iniciarDNS(argv[2]);
 	}
 }
