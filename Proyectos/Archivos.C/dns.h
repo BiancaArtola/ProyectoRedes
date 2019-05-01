@@ -23,6 +23,7 @@ void ChangetoDnsNameFormat (unsigned char*,unsigned char*);
 unsigned char* ReadName (unsigned char*,unsigned char*,int*);
 void asignarServidorDNS(char* servidor);
 int iniciarDNS(unsigned char consulta[]);
+void asignarPuerto(int numeroPuerto);
  
 //DNS header structure
 struct DNS_HEADER
@@ -54,7 +55,7 @@ struct QUESTION
     unsigned short qtype;
     unsigned short qclass;
 };
- 
+
 //Constant sized fields of the resource record structure
 #pragma pack(push, 1)
 struct R_DATA

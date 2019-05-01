@@ -34,7 +34,7 @@ int buscarPuerto(char* parametroServidor){
 	int encontreCorchete = 0;
 	int i = 0;
 	for (i = 0 ; i < cantCaracteres && encontreCorchete ==0; i++){
-		if (parametroServidor[i] == '[') {
+		if (parametroServidor[i] == '[' && parametroServidor[i+1]==':') {
 			encontreCorchete = 1;
 			posicionComienzoPuerto = i;			
 		}
@@ -44,14 +44,19 @@ int buscarPuerto(char* parametroServidor){
 
 void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuerto){
 	parametros.servidor=(char*) malloc(100);
+	parametros.puerto = (char*) malloc(50);
+	
+	//El puerto comienza donde termina el servidor --> se le quitan dos por '[:'
 	int longitudServidor = posicionComienzoPuerto;
-	char* puerto = parametroServidor+posicionComienzoPuerto;
-	int x=1;
+	parametros.puerto = parametroServidor+posicionComienzoPuerto+2;
+	
+	//Asigno en parametros.servidor el valor correspondiente ingresado por el usuario
+	//Como el primer caracter ingresado es @, hacemos el +1
 	strncpy(parametros.servidor, parametroServidor, posicionComienzoPuerto);
 	parametros.servidor = parametros.servidor+1;
-		
-	printf("El puerto es %s, la longitud es %i y el servidor es %s \n", 
-	puerto, posicionComienzoPuerto, parametros.servidor);
+
+	printf("El puerto es %s, la longitud es %i y el servidor es %s longitud %i \n", 
+	parametros.puerto, posicionComienzoPuerto, parametros.servidor);
 }
 
 void asignarServidorSinPuerto(char parametroServidor[]){
@@ -117,6 +122,10 @@ void evaluarParametros(char* argv[], int argc){
 		printf("Los parametros ingresados son INCORRECTOS. Por favor chequee su entrada. \n");
 	else {
 		asignarServidorDNS(parametros.servidor);
+		
+		int puertoAuxiliar = atoi(parametros.puerto);
+		asignarPuerto(puertoAuxiliar);
+		
 		iniciarDNS(argv[2]);
 	}
 }

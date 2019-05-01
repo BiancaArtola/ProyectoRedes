@@ -1,6 +1,8 @@
 #include "dns.h"
 
 int dns_server_count = 0;
+struct sockaddr_in dest;
+
 int iniciarDNS(unsigned char consulta[])
 {
     unsigned char* hostname;
@@ -11,7 +13,13 @@ int iniciarDNS(unsigned char consulta[])
  
     return 0;
 }
- 
+
+void asignarPuerto(int numeroPuerto){
+	if (numeroPuerto == 0)
+		dest.sin_port = htons(6); //modificar con puerto por defecto 
+	else
+		dest.sin_port = htons(numeroPuerto); //PUerto --> htons convierte int pq internet no los entiende
+}
 /*
  * Perform a DNS query by sending a packet
  * */
@@ -23,12 +31,12 @@ void ngethostbyname(unsigned char *host , int query_type)
     struct sockaddr_in a;
  
     struct RES_RECORD answers[20],auth[20],addit[20]; //the replies from the DNS server
-    struct sockaddr_in dest;
+ 
  
     struct DNS_HEADER *dns = NULL;
     struct QUESTION *qinfo = NULL;
  
-    printf("Resolving %s" , host);
+    printf("Evaluando la consulta: %s" , host);
  
 	/*Dominio - tipo - protocolo
 	 PF_INET para TCP/IP
@@ -38,7 +46,7 @@ void ngethostbyname(unsigned char *host , int query_type)
  
 	//Se importa con la libreria netinet
     dest.sin_family = AF_INET; //Familia de la direccion 
-    dest.sin_port = htons(53); //PUerto --> htons convierte int pq internet no los entiende
+  //  dest.sin_port = htons(53); //PUerto --> htons convierte int pq internet no los entiende
     dest.sin_addr.s_addr = inet_addr(dns_servers[0]); 
     //dest.sin_addr direccion de internet --> s_addr es una manera de acceder (4bytes)
     //inet_addr convierte una ip a entero largo sin signo
@@ -74,7 +82,7 @@ void ngethostbyname(unsigned char *host , int query_type)
     qinfo->qclass = htons(1); //its internet (lol)
  
     printf("\nSending Packet...");
-    //sendto(socket, mensaje, tamano, flags(especifica el tipo de documento, destino, long destino
+    //sendto(socket, mensaje, tamano, flags(especifica el tipo de documento), destino, long destino
     if( sendto(s,(char*)buf,
     sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION),0,
     (struct sockaddr*)&dest,sizeof(dest)) < 0)
