@@ -1,9 +1,6 @@
 #include "consultas.h"
 #include "dns.h"
 #include <stdio.h>
-#define TIPOCONSULTA_DEFECTO "-a"
-#define TIPORESOLUCION_DEFECTO "-r"
-#define PUERTO_DEFECTO 80
 
 struct parametrosConsulta {
 	char* servidor;
@@ -36,7 +33,7 @@ int buscarPuerto(char* parametroServidor){
 	for (i = 0 ; i < cantCaracteres && encontreCorchete ==0; i++){
 		if (parametroServidor[i] == '[' && parametroServidor[i+1]==':') {
 			encontreCorchete = 1;
-			posicionComienzoPuerto = i;			
+			posicionComienzoPuerto = i;
 		}
 	}
 	return posicionComienzoPuerto;
@@ -45,18 +42,15 @@ int buscarPuerto(char* parametroServidor){
 void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuerto){
 	parametros.servidor=(char*) malloc(100);
 	parametros.puerto = (char*) malloc(50);
-	
+
 	//El puerto comienza donde termina el servidor --> se le quitan dos por '[:'
 	int longitudServidor = posicionComienzoPuerto;
 	parametros.puerto = parametroServidor+posicionComienzoPuerto+2;
-	
+
 	//Asigno en parametros.servidor el valor correspondiente ingresado por el usuario
 	//Como el primer caracter ingresado es @, hacemos el +1
 	strncpy(parametros.servidor, parametroServidor, posicionComienzoPuerto);
 	parametros.servidor = parametros.servidor+1;
-
-	printf("El puerto es %s, la longitud es %i y el servidor es %s longitud %i \n", 
-	parametros.puerto, posicionComienzoPuerto, parametros.servidor);
 }
 
 void asignarServidorSinPuerto(char parametroServidor[]){
@@ -64,38 +58,47 @@ void asignarServidorSinPuerto(char parametroServidor[]){
 	parametros.servidor = parametroServidor+1;
 }
 
-void evaluarPuerto(char parametroServidor[]){	
+void evaluarPuerto(char parametroServidor[]){
 	int posicionComienzoPuerto = buscarPuerto(parametroServidor);
-	
-	if (posicionComienzoPuerto>0){ //Esto indica que hay puerto	
-		asignarServidorConPuerto(parametroServidor, posicionComienzoPuerto);		
+
+	if (posicionComienzoPuerto>0){ //Esto indica que hay puerto
+		asignarServidorConPuerto(parametroServidor, posicionComienzoPuerto);
 	}else
-		asignarServidorSinPuerto(parametroServidor);	
+		asignarServidorSinPuerto(parametroServidor);
+}
+
+void asignarTipoConsultaPorDefecto(){
+	if (parametros.tipoConsulta == NULL)
+		parametros.tipoConsulta = TIPOCONSULTA_DEFECTO;
+	if (parametros.tipoResolucionConsulta == NULL)
+		parametros.tipoResolucionConsulta = TIPORESOLUCION_DEFECTO;
+
 }
 
 int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int comienzoParametros){
 	int i;
-	parametros.tipoConsulta = "";
-	parametros.tipoResolucionConsulta = "";
+	parametros.tipoConsulta = NULL;
+	parametros.tipoResolucionConsulta = NULL;
 	for (i = comienzoParametros; i<cantParametros ; i++){
-		if ((strcmp(parametrosFinales[i], "-a") == 0) || 
+		if ((strcmp(parametrosFinales[i], "-a") == 0) ||
 			(strcmp(parametrosFinales[i], "-mx") == 0) ||
 			(strcmp(parametrosFinales[i], "-loc") == 0)){
-				if (parametros.tipoConsulta == "")
+				if (parametros.tipoConsulta == NULL)
 					parametros.tipoConsulta = parametrosFinales[i];
 				else
 					return 0; //Hubo un error
-			}
-		else if ((strcmp(parametrosFinales[i], "-r") == 0) ||	
+		}
+		else if ((strcmp(parametrosFinales[i], "-r") == 0) ||
 				(strcmp(parametrosFinales[i], "-t") == 0)) {
-					if (parametros.tipoResolucionConsulta == "")
+					if (parametros.tipoResolucionConsulta == NULL)
 						parametros.tipoResolucionConsulta = parametrosFinales[i];
 					else
 						return 0; //Hubo un error
-		}
-		else
-			return 0; //No ingreso ningun tipo de parametro valido.
+				}
+				else
+					return 0; //No ingreso ningun tipo de parametro valido.
 	}
+	asignarTipoConsultaPorDefecto();
 	return 1; //Salida exitosa
 }
 
@@ -107,25 +110,31 @@ int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], i
 		return evaluarParametrosFinales(parametrosIngresados, cantParametros, 4);
 	else if (servidorAsignado==1 && cantParametros>3)
 		return evaluarParametrosFinales(parametrosIngresados, cantParametros, 3);
-	else if ((servidorAsignado==1 && cantParametros==3) || (servidorAsignado==0 && cantParametros==4))
+	else if ((servidorAsignado==1 && cantParametros==3) || (servidorAsignado==0 && cantParametros==4)){
+		//No hay parametros de tipo consulta o tipo resolucion consulta
+		asignarTipoConsultaPorDefecto();
 		return 1;
-	else 
+	}
+	else
 		return 0;
 }
 
 void evaluarParametros(char* argv[], int argc){
 	int servidorAsignado = buscarServidorYPuerto(argv, argc);
-	
-	int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);	
-		
+
+	int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
 	if (hayParametrosAsignados == 0)
 		printf("Los parametros ingresados son INCORRECTOS. Por favor chequee su entrada. \n");
 	else {
 		asignarServidorDNS(parametros.servidor);
-		
+
 		int puertoAuxiliar = atoi(parametros.puerto);
 		asignarPuerto(puertoAuxiliar);
-		
+
+		asignarTipoConsultaDNS(parametros.tipoConsulta);		
+		asignarTipoResolucionConsultaDNS(parametros.tipoResolucionConsulta);
+
+
 		iniciarDNS(argv[2]);
 	}
 }
