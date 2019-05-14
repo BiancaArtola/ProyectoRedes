@@ -8,7 +8,6 @@ unsigned char* hostOriginal= NULL;
 struct RES_RECORD answers[20],auth[20],addit[20]; 
 
 void asignarInformacion(struct informacionConsultaDNS parametros);
-int iniciarDNS(unsigned char consulta[]);
 void asignarServidorDNS(char* servidor);
 void buscarIPporNombre(unsigned char *host);
 void mostrarContenidoRespuesta();
@@ -23,19 +22,20 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count);
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
 
 void asignarInformacion(struct informacionConsultaDNS parametros){
-    printf("hola");
     infoConsulta.servidor = parametros.servidor;
     infoConsulta.puerto = parametros.puerto;
     infoConsulta.nroConsulta = parametros.nroConsulta;
     infoConsulta.nroResolucionConsulta = parametros.nroResolucionConsulta;
+    infoConsulta.consulta = parametros.consulta;
 }
 
-int iniciarDNS(unsigned char consulta[]){
-    unsigned char* consultaUsuario;
-    consultaUsuario = consulta;
+int iniciarDNS(struct informacionConsultaDNS parametros){
+    asignarInformacion(parametros);
+
     asignarServidorDNS(infoConsulta.servidor);
     dest.sin_port = infoConsulta.puerto;
-    buscarIPporNombre(consultaUsuario);
+    
+    buscarIPporNombre(infoConsulta.consulta);
     return 0;
 }
 

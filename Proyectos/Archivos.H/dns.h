@@ -24,15 +24,6 @@ char servidorDNS[10];
 
 #define PUERTO_DEFECTO 53
 
-//Funciones de la clase "dns.c"
-void buscarIPporNombre(unsigned char* );
-void cambiarAFormatoDNS(unsigned char*,unsigned char*);
-unsigned char* ReadName (unsigned char*,unsigned char*,int*);
-void asignarServidorDNS(char* servidor);
-int iniciarDNS(unsigned char consulta[]);
-void asignarPuerto(int numeroPuerto);
-void asignarTipoConsultaDNS(char* consulta);
-
 //Estructura del header de DNS
 struct DNS_HEADER{
     unsigned short id; // identification number
@@ -92,5 +83,6 @@ struct informacionConsultaDNS {
 	char* puerto;
 	int nroConsulta;
 	int nroResolucionConsulta;
+    unsigned char* consulta;
 }infoConsulta;
 

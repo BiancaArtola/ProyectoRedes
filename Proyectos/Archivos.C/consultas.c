@@ -8,6 +8,7 @@ struct parametrosConsulta {
 	char* puerto;
 	int nroConsulta;
 	int nroResolucionConsulta;
+	unsigned char* consulta;
 }parametros;
 
 char* tipoConsulta;
@@ -146,6 +147,10 @@ void setTipoResolucionConsulta(){
 		parametros.nroResolucionConsulta = C_ITERATIVO;
 }
 
+void setConsulta(char* consulta){
+	parametros.consulta = consulta;
+}
+
 void evaluarIngreso(char* argv[], int argc){
 	if (argc > 6 || argc < 3)
 		mensajeAyuda();
@@ -159,10 +164,10 @@ void evaluarIngreso(char* argv[], int argc){
 			else {
 				setPuerto();				
 				setTipoConsulta();
-				setTipoResolucionConsulta();				
+				setTipoResolucionConsulta();		
+				setConsulta(argv[2]);		
 
-				asignarInformacion(parametros);
-				iniciarDNS(argv[2]);
+				iniciarDNS(parametros);
 			}
 		}
 		else
