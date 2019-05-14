@@ -7,10 +7,60 @@ int segundoParametro=0;
 struct DNS_HEADER *dns ;
 struct sockaddr_in a;
 unsigned char* hostOriginal= NULL;
-//Respuestas del servidor DNS --> tienen el mismo formato (resource records)
-struct RES_RECORD answers[20],auth[20],addit[20]; 
 
+int iniciarDNS(unsigned char consulta[]){
+    unsigned char* consultaUsuario;
+    consultaUsuario = consulta;
+    buscarIPporNombre(consultaUsuario);
+    return 0;
+}
 
+/*
+ * Asigna el puerto correspondiente.
+ * Si numeroPuerto=0 no se asigno ningun puerto, por lo tanto se asigna el puerto por defecto.
+ * Sino, se asigna el puerto ingresado por el usuario
+ * */
+void asignarPuerto(int numeroPuerto){
+	if (numeroPuerto == 0)
+		dest.sin_port = htons(PUERTO_DEFECTO); 
+	else
+		dest.sin_port = htons(numeroPuerto); 
+}
+
+void asignarTipoConsultaDNS(char* consulta){
+	if (strcmp(consulta, "-a") == 0)
+		primerParametro = T_A;
+	else if (strcmp(consulta, "-mx") == 0)
+		primerParametro = T_MX;
+	else
+		primerParametro = T_LOC;
+}
+
+void asignarTipoResolucionConsultaDNS(char* consulta){
+	if (strcmp(consulta, "-r") == 0)
+		segundoParametro = C_RECURSIVA;
+	else if (strcmp(consulta, "-t") == 0)
+		segundoParametro = C_ITERATIVO;
+}
+
+void asignarPropiedadesDNS(){
+	dns->id = (unsigned short) htons(getpid());
+    //0 es falso.
+    dns->qr = 0; //This is a query
+    dns->opcode = 0; //This is a standard query
+    dns->aa = 0; //Not Authoritative
+    dns->tc = 0; //This message is not truncated
+    dns->rd = 1; //Recursion Desired
+    dns->ra = 0; //Recursion not available! hey we dont have it (lol)
+    dns->z = 0;
+    dns->ad = 0;
+    dns->cd = 0;
+    dns->rcode = 0;
+    dns->q_count = htons(1); //we have only 1 question
+    dns->ans_count = 0;
+    dns->auth_count = 0;
+    dns->add_count = 0;
+}
 
 void mostrarContenidoRespuesta(){
 	printf("La respuesta contiene: \n");
@@ -67,91 +117,12 @@ void mostrarRespuestas(struct RES_RECORD answers[20],struct RES_RECORD auth[20],
     mostrarAdditionalRecords(addit);     
 }
 
-int iniciarDNS(unsigned char consulta[]){
-    unsigned char* consultaUsuario;
-    consultaUsuario = consulta;
-    buscarIPporNombre(consultaUsuario);
-    return 0;
-}
-
-/*
- * Asigna el puerto correspondiente.
- * Si numeroPuerto=0 no se asigno ningun puerto, por lo tanto se asigna el puerto por defecto.
- * Sino, se asigna el puerto ingresado por el usuario
- * */
-void asignarPuerto(int numeroPuerto){
-	if (numeroPuerto == 0)
-		dest.sin_port = htons(PUERTO_DEFECTO); 
-	else
-		dest.sin_port = htons(numeroPuerto); 
-}
-
-void asignarTipoConsultaDNS(char* consulta){
-	if (strcmp(consulta, "-a") == 0)
-		primerParametro = T_A;
-	else if (strcmp(consulta, "-mx") == 0)
-		primerParametro = T_MX;
-	else
-		primerParametro = T_LOC;
-}
-
-void asignarTipoResolucionConsultaDNS(char* consulta){
-	if (strcmp(consulta, "-r") == 0)
-		segundoParametro = C_RECURSIVA;
-	else if (strcmp(consulta, "-t") == 0)
-		segundoParametro = C_ITERATIVO;
-}
-
-void asignarPropiedadesDNS(){
-	dns->id = (unsigned short) htons(getpid());
-    //0 es falso.
-    dns->qr = 0; //This is a query
-    dns->opcode = 0; //This is a standard query
-    dns->aa = 0; //Not Authoritative
-    dns->tc = 0; //This message is not truncated
-    dns->rd = 1; //Recursion Desired
-    dns->ra = 0; //Recursion not available! hey we dont have it (lol)
-    dns->z = 0;
-    dns->ad = 0;
-    dns->cd = 0;
-    dns->rcode = 0;
-    dns->q_count = htons(1); //we have only 1 question
-    dns->ans_count = 0;
-    dns->auth_count = 0;
-    dns->add_count = 0;
-}
-
-void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar){
-    record[i].name = hostOriginal;
-    reader+=finalizar;
-
-    record[i].resource=(struct R_DATA*)(reader);
-    reader+=sizeof(struct R_DATA);
-}
-
-void readTipoRecurso(struct RES_RECORD record[20], int i, 
-    unsigned char *reader,  unsigned char buf[65536], int finalizar){
-
-    if(ntohs(record[i].resource->type)==T_A) {
-      record[i].rdata = (unsigned char*)malloc(ntohs(record[i].resource->data_len));
-      int j;
-      for(j=0;j<ntohs(record[i].resource->data_len);j++)
-		record[i].rdata[j]=reader[j];
-
-        record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
-        reader+=ntohs(record[i].resource->data_len);
-     }
-     else{
-        record[i].rdata=ReadName(reader,buf,&finalizar);
-        reader+=finalizar;
-     }
-}
-
 void buscarIPporNombre(unsigned char *host){	
     unsigned char buf[65536],*qname,*reader;
     int j;   
 	int tamanioMensajeSocket=0;
-
+	//Respuestas del servidor DNS --> tienen el mismo formato (resource records)
+    struct RES_RECORD answers[20],auth[20],addit[20]; 
        
     struct QUESTION *qinfo = NULL;
 
@@ -197,7 +168,7 @@ void buscarIPporNombre(unsigned char *host){
     }
 
     dns = (struct DNS_HEADER*) buf;
-    mostrarContenidoRespuesta(dns);
+    mostrarContenidoRespuesta();
     
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  //mueve el puntero	
@@ -206,14 +177,36 @@ void buscarIPporNombre(unsigned char *host){
 	int i = 0;
     for (i=0; i < ntohs(dns->ans_count); i++){
         ReadName(reader, buf, &finalizar);
-        readGeneral(i, answers, reader, finalizar);     
-        readTipoRecurso(answers, i, reader, buf, finalizar);    
+        answers[i].name = hostOriginal;
+        reader = reader + finalizar;
+
+        answers[i].resource = (struct R_DATA*)(reader);
+        reader = reader + sizeof(struct R_DATA);
+
+		 //if its an ipv4 address
+        if(ntohs(answers[i].resource->type) == 1) {
+            answers[i].rdata = (unsigned char*)malloc(ntohs(answers[i].resource->data_len));
+            for(j=0 ; j<ntohs(answers[i].resource->data_len) ; j++)
+                answers[i].rdata[j]=reader[j];   
+
+            answers[i].rdata[ntohs(answers[i].resource->data_len)] = '\0';
+            reader = reader + ntohs(answers[i].resource->data_len);
+        }
+        else{
+            answers[i].rdata = ReadName(reader,buf,&finalizar);
+            reader = reader + finalizar;
+        }
     }
 
     //read authorities
     for(i=0;i<ntohs(dns->auth_count);i++){
         ReadName(reader,buf,&finalizar);
-        readGeneral(i, auth, reader, finalizar);    
+        auth[i].name = hostOriginal;
+         printf("autorizado %s \n",auth[i].name);
+        reader+=finalizar;
+
+        auth[i].resource=(struct R_DATA*)(reader);
+        reader+=sizeof(struct R_DATA);
 
         auth[i].rdata=ReadName(reader,buf,&finalizar);
         reader+=finalizar;
@@ -221,9 +214,26 @@ void buscarIPporNombre(unsigned char *host){
 
     //read additional
     for(i=0;i<ntohs(dns->add_count);i++)  {
-        ReadName(reader,buf,&finalizar);        
-        readGeneral(i, addit, reader, finalizar);
-        readTipoRecurso(addit, i, reader, buf, finalizar);        
+        ReadName(reader,buf,&finalizar);
+        addit[i].name = hostOriginal;
+        printf("adicional %s \n",addit[i].name);
+        reader+=finalizar;
+
+        addit[i].resource=(struct R_DATA*)(reader);
+        reader+=sizeof(struct R_DATA);
+
+        if(ntohs(addit[i].resource->type)==1) {
+            addit[i].rdata = (unsigned char*)malloc(ntohs(addit[i].resource->data_len));
+            for(j=0;j<ntohs(addit[i].resource->data_len);j++)
+				addit[i].rdata[j]=reader[j];
+
+            addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
+            reader+=ntohs(addit[i].resource->data_len);
+        }
+        else{
+            addit[i].rdata=ReadName(reader,buf,&finalizar);
+            reader+=finalizar;
+        }
     }
 	mostrarRespuestas(answers, auth, addit);  
 	return;
