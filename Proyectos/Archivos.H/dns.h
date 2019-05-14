@@ -9,17 +9,18 @@
 //Servidor DNS
 char servidorDNS[10];
 
+
 //Tipos de registros
 #define T_A 1 
 #define T_MX 15 
 #define T_LOC 29
+//Valor de clase --> solo usamos internet (IN)
+#define VALOR_CLASS_IN 1
+
 
 //Tipos de resolucion de consulta
 #define C_RECURSIVA 1
 #define C_ITERATIVO 2
-
-//Valor de clase --> solo usamos internet (IN)
-#define VALOR_CLASS_IN 1
 
 #define PUERTO_DEFECTO 53
 
@@ -85,4 +86,11 @@ typedef struct{
     unsigned char *name;
     struct QUESTION *ques;
 } QUERY;
+
+struct informacionConsultaDNS {
+	char* servidor;
+	char* puerto;
+	int nroConsulta;
+	int nroResolucionConsulta;
+}infoConsulta;
 

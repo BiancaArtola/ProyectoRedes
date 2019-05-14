@@ -1,13 +1,17 @@
-#include "consultas.h"
-#include "dns.h"
+#include "../Archivos.H/consultas.h"
+#include "../Archivos.H/dns.h"
+#include "../Archivos.H/ayuda.h"
 #include <stdio.h>
 
 struct parametrosConsulta {
 	char* servidor;
 	char* puerto;
-	char* tipoConsulta;
-	char* tipoResolucionConsulta;
+	int nroConsulta;
+	int nroResolucionConsulta;
 }parametros;
+
+char* tipoConsulta;
+char* tipoResolucionConsulta;
 
 int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 	//Retorna 0 si el servidor fue asignado. 1 en caso contrario.
@@ -68,30 +72,29 @@ void evaluarPuerto(char parametroServidor[]){
 }
 
 void asignarTipoConsultaPorDefecto(){
-	if (parametros.tipoConsulta == NULL)
-		parametros.tipoConsulta = TIPOCONSULTA_DEFECTO;
-	if (parametros.tipoResolucionConsulta == NULL)
-		parametros.tipoResolucionConsulta = TIPORESOLUCION_DEFECTO;
-
+	if (tipoConsulta == NULL)
+		tipoConsulta = TIPOCONSULTA_DEFECTO;
+	if (tipoResolucionConsulta == NULL)
+		tipoResolucionConsulta = TIPORESOLUCION_DEFECTO;
 }
 
 int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int comienzoParametros){
 	int i;
-	parametros.tipoConsulta = NULL;
-	parametros.tipoResolucionConsulta = NULL;
+	tipoConsulta = NULL;
+	tipoResolucionConsulta = NULL;
 	for (i = comienzoParametros; i<cantParametros ; i++){
 		if ((strcmp(parametrosFinales[i], "-a") == 0) ||
 			(strcmp(parametrosFinales[i], "-mx") == 0) ||
 			(strcmp(parametrosFinales[i], "-loc") == 0)){
-				if (parametros.tipoConsulta == NULL)
-					parametros.tipoConsulta = parametrosFinales[i];
+				if (tipoConsulta == NULL)
+					tipoConsulta = parametrosFinales[i];
 				else
 					return 0; //Hubo un error
 		}
 		else if ((strcmp(parametrosFinales[i], "-r") == 0) ||
 				(strcmp(parametrosFinales[i], "-t") == 0)) {
-					if (parametros.tipoResolucionConsulta == NULL)
-						parametros.tipoResolucionConsulta = parametrosFinales[i];
+					if (tipoResolucionConsulta == NULL)
+						tipoResolucionConsulta = parametrosFinales[i];
 					else
 						return 0; //Hubo un error
 				}
@@ -119,22 +122,50 @@ int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], i
 		return 0;
 }
 
-void evaluarParametros(char* argv[], int argc){
-	int servidorAsignado = buscarServidorYPuerto(argv, argc);
+void setPuerto(){
+	int puertoAuxiliar = atoi(parametros.puerto);
+	if (puertoAuxiliar == 0)
+		parametros.puerto = htons(PUERTO_DEFECTO); 
+	else
+		parametros.puerto = htons(puertoAuxiliar); 
+}
 
-	int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
-	if (hayParametrosAsignados == 0)
-		printf("Los parametros ingresados son INCORRECTOS. Por favor chequee su entrada. \n");
-	else {
-		asignarServidorDNS(parametros.servidor);
+void setTipoConsulta(){
+	if (strcmp(tipoConsulta, "-a") == 0)
+		parametros.nroConsulta = T_A;
+	else if (strcmp(tipoConsulta, "-mx") == 0)
+		parametros.nroConsulta = T_MX;
+	else
+		parametros.nroConsulta = T_LOC;	
+}
 
-		int puertoAuxiliar = atoi(parametros.puerto);
-		asignarPuerto(puertoAuxiliar);
+void setTipoResolucionConsulta(){
+	if (strcmp(tipoResolucionConsulta, "-r") == 0)
+		parametros.nroResolucionConsulta = C_RECURSIVA;
+	else if (strcmp(tipoResolucionConsulta, "-t") == 0)
+		parametros.nroResolucionConsulta = C_ITERATIVO;
+}
 
-		asignarTipoConsultaDNS(parametros.tipoConsulta);		
-		asignarTipoResolucionConsultaDNS(parametros.tipoResolucionConsulta);
+void evaluarIngreso(char* argv[], int argc){
+	if (argc > 6 || argc < 3)
+		mensajeAyuda();
+	else{
+		if (strcmp(argv[1], "query")==0){
+			int servidorAsignado = buscarServidorYPuerto(argv, argc);
+			int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
 
+			if (hayParametrosAsignados == 0)
+				printf("Los parametros ingresados son INCORRECTOS. Por favor chequee su entrada. \n");
+			else {
+				setPuerto();				
+				setTipoConsulta();
+				setTipoResolucionConsulta();				
 
-		iniciarDNS(argv[2]);
+				asignarInformacion(parametros);
+				iniciarDNS(argv[2]);
+			}
+		}
+		else
+			mensajeAyuda();
 	}
 }

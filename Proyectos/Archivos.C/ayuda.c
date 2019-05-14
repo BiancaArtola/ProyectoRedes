@@ -1,18 +1,18 @@
 #include <stdio.h>
-#include "ayuda.h"
+#include "../Archivos.H/ayuda.h"
 
-void mensajeAyuda()
-{
+/**
+ * Lee el mensaje de ayuda de un archivo y lo muestra por pantalla
+ * */
+void mensajeAyuda(){
 	FILE *archivo;
 	char caracter;
 	
-	archivo= fopen("ayuda.txt","rt");
+	archivo= fopen("../Archivos.TXT/ayuda.txt","rt");
 	
-	while ((caracter=fgetc(archivo))!= EOF)
-	
+	while ((caracter=fgetc(archivo))!= EOF)		
 		printf ("%c", caracter);
 	
 	printf ("\n");
-	fclose(archivo);
-	
+	fclose(archivo);	
 }
