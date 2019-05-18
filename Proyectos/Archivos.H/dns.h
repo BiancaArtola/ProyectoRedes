@@ -20,7 +20,7 @@ char servidorDNS[10];
 
 //Tipos de resolucion de consulta
 #define C_RECURSIVA 1
-#define C_ITERATIVO 2
+#define C_ITERATIVO 0
 
 #define PUERTO_DEFECTO 53
 

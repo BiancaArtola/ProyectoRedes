@@ -3,7 +3,6 @@
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
 struct sockaddr_in a;
-unsigned char* hostOriginal= NULL;
 //Respuestas del servidor DNS --> tienen el mismo formato (resource records)
 struct RES_RECORD answers[20],auth[20],addit[20]; 
 
@@ -88,7 +87,6 @@ void buscarIPporNombre(unsigned char *host){
     //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
     qname =(unsigned char*)&buf[tamanioMensajeSocket];
-    hostOriginal = host;
     cambiarAFormatoDNS(qname, host);
     
     //Informacion de consulta
@@ -117,18 +115,45 @@ void buscarIPporNombre(unsigned char *host){
     
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  //mueve el puntero	
-   
-	int finalizar=0;
+
+	 int finalizar=0;
 	int i = 0;
     for (i=0; i < ntohs(dns->ans_count); i++){
-        ReadName(reader, buf, &finalizar);
-        readGeneral(i, answers, reader, finalizar);     
-        readTipoRecurso(answers, i, reader, buf, finalizar);    
+       //finalizar=0;
+        answers[i].name=ReadName(reader, buf, &finalizar);
+         reader+=finalizar;
+
+        answers[i].resource=(struct R_DATA*)(reader);
+        reader=reader+sizeof(struct R_DATA);    
+        answers[i].rdata= (unsigned char*)malloc(ntohs(answers[i].resource->data_len));
+
+        if(ntohs(answers[i].resource->type)==T_A) {
+            int j;
+            for(j=0;j<ntohs(answers[i].resource->data_len);j++)
+                answers[i].rdata[j]=reader[j];            
+            
+            answers[i].rdata[ntohs(answers[i].resource->data_len)]='\0';
+                reader+=ntohs(answers[i].resource->data_len);
+        }
+        else if (ntohs(answers[i].resource->type)==T_MX) {
+            *answers[i].rdata = *(reader+1);
+            
+            reader+=sizeof(short);
+            answers[i].rdata+= sizeof(short);
+
+            finalizar = 0 ;
+            
+            answers[i].rdata = ReadName(reader, buf, &finalizar);
+
+            answers[i].rdata-= sizeof(short);
+          
+            reader+=finalizar;
+        } 
     }
 
     //read authorities
     for(i=0;i<ntohs(dns->auth_count);i++){
-        ReadName(reader,buf,&finalizar);
+        auth[i].name=ReadName(reader,buf,&finalizar);
         readGeneral(i, auth, reader, finalizar);    
 
         auth[i].rdata=ReadName(reader,buf,&finalizar);
@@ -137,7 +162,7 @@ void buscarIPporNombre(unsigned char *host){
 
     //read additional
     for(i=0;i<ntohs(dns->add_count);i++)  {
-        ReadName(reader,buf,&finalizar);        
+        addit[i].name=ReadName(reader,buf,&finalizar);        
         readGeneral(i, addit, reader, finalizar);
         readTipoRecurso(addit, i, reader, buf, finalizar);        
     }
@@ -156,7 +181,7 @@ void mostrarContenidoRespuesta(){
 
 void mostrarAnswerRecords(){
 	int i;
-    printf("Answer Records: %d \n" , ntohs(dns->ans_count) );
+    printf("\n\nAnswer Records: %d \n" , ntohs(dns->ans_count) );
     for(i=0 ; i < ntohs(dns->ans_count) ; i++){
         printf("-Nombre: %s \n",answers[i].name);
 
@@ -166,12 +191,16 @@ void mostrarAnswerRecords(){
             a.sin_addr.s_addr=(*p);
             printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
         }
+
+        else if ( ntohs(answers[i].resource->type) == T_MX) {           
+            printf("MX %s \n",  answers[i].rdata+sizeof(short));
+        }
     }
 }
 
 void mostrarAutoritiveRecords(){
 	int i;
-    printf("Authoritive Records: %d \n" , ntohs(dns->auth_count) );
+    printf("\n\nAuthoritive Records: %d \n" , ntohs(dns->auth_count) );
     for( i=0 ; i < ntohs(dns->auth_count) ; i++) {
         printf("-Nombre : %s \n",auth[i].name);
         if(ntohs(auth[i].resource->type)==2){
@@ -183,12 +212,20 @@ void mostrarAutoritiveRecords(){
 
 void mostrarAdditionalRecords(){
 	int i;
-    printf("Additional Records: %d \n" , ntohs(dns->add_count) );
+    printf("\n\nAdditional Records: %d \n" , ntohs(dns->add_count) );
     for(i=0; i < ntohs(dns->add_count) ; i++) {
         printf("-Nombre: %s \n ",addit[i].name);
         if(ntohs(addit[i].resource->type)==1) {
             long *p;
             p=(long*)addit[i].rdata;
+            a.sin_addr.s_addr=(*p);
+            printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
+        }
+
+        if(ntohs(addit[i].resource->type)==T_MX) {
+            long *p;
+            p=(long*)addit[i].rdata;
+           // printf("r date de las cosas %s \n",addit[i].rdata);
             a.sin_addr.s_addr=(*p);
             printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
         }
@@ -207,7 +244,7 @@ void asignarPropiedadesDNS(){
     dns->opcode = 0; //This is a standard query
     dns->aa = 0; //Not Authoritative
     dns->tc = 0; //This message is not truncated
-    dns->rd = 1; //Recursion Desired
+    dns->rd = infoConsulta.nroResolucionConsulta; //Indicara si la consulta es recursiva o iterativa
     dns->ra = 0; //Recursion not available! hey we dont have it (lol)
     dns->z = 0;
     dns->ad = 0;
@@ -219,31 +256,6 @@ void asignarPropiedadesDNS(){
     dns->add_count = 0;
 }
 
-void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar){
-    record[i].name = hostOriginal;
-    reader+=finalizar;
-
-    record[i].resource=(struct R_DATA*)(reader);
-    reader+=sizeof(struct R_DATA);
-}
-
-void readTipoRecurso(struct RES_RECORD record[20], int i, 
-    unsigned char *reader,  unsigned char buf[65536], int finalizar){
-
-    if(ntohs(record[i].resource->type)==T_A) {
-      record[i].rdata = (unsigned char*)malloc(ntohs(record[i].resource->data_len));
-      int j;
-      for(j=0;j<ntohs(record[i].resource->data_len);j++)
-		record[i].rdata[j]=reader[j];
-
-        record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
-        reader+=ntohs(record[i].resource->data_len);
-     }
-     else{
-        record[i].rdata=ReadName(reader,buf,&finalizar);
-        reader+=finalizar;
-     }
-}
 
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){ 
     *count = 1;
@@ -254,24 +266,28 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
 
 	unsigned int offset;
 	unsigned int p=0,jumped=0;
-	
+	//printf("reader %i \n", *(reader+1));
+    //printf("buffer %i \n", *buffer);
     //Lee los nombres en formato DNS(3www6google3com)
     while (*reader!=0) {
         if(*reader >= 192){
             offset = (*reader)*256 + *(reader+1) - 49152; //convierte a binario
+           // printf("offset %i", offset);
             reader = buffer + offset - 1;
+           // printf("reader %i", *reader);
             jumped = 1; //we have jumped to another location so counting wont go up!
         }else        
             name[p++]=*reader;        
         reader = reader+1;
         if (jumped == 0)
             *count = *count + 1; //if we havent jumped to another location then we can count up
+    
     }
     name[p]='\0'; //FInalizo string
     if(jumped==1)
         *count = *count + 1; //number of steps we actually moved forward in the packet
 
-/*	 int i, j;
+	 int i, j;
     //now convert 3www6google3com0 to www.google.com
     for (i=0; i < (int)strlen((const char*)name); i++){
         p=name[i];
@@ -282,9 +298,50 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
         name[i]='.';
     }
     name[i-1]='\0'; //remove the last dot
-    return name;*/
-    
+    return name;    
 }
+
+void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar){
+    reader+=finalizar;
+    record[i].resource=(struct R_DATA*)(reader);
+    reader=reader+sizeof(struct R_DATA)-2;
+}
+
+void readTipoRecurso(struct RES_RECORD record[20], int i, 
+    unsigned char *reader,  unsigned char buf[65536], int finalizar){
+
+    record[i].rdata= (unsigned char*)malloc(ntohs(record[i].resource->data_len));
+
+    if(ntohs(record[i].resource->type)==T_A) {
+      int j;
+      for(j=0;j<ntohs(record[i].resource->data_len);j++){
+		record[i].rdata[j]=reader[j];
+        printf("reader d mierda %i", reader[j]);
+      }
+        printf(" data1  %i", ntohs(record[i].resource->data_len));
+      record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
+        reader+=ntohs(record[i].resource->data_len);
+     }
+     else if (ntohs(record[i].resource->type)==T_MX) {
+         
+        printf("reader antes de sizeof %i \n\n", *reader);
+       *record[i].rdata = *(reader+1);
+       
+      // reader+=sizeof(short);
+       
+        printf("reader dsp sizeof %i \n\n", *reader);
+      // record[i].rdata+= sizeof(short);
+        finalizar = 0 ;
+        record[i].rdata = ReadName(reader, buf, &finalizar);
+
+        printf("RECORD %s \n\n", record[i].rdata);
+         // record[i].rdata-= sizeof(short);
+       // record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
+      //  reader+=ntohs(record[i].resource->data_len);
+      reader+=finalizar;
+    }
+}
+
 
 /*
  * Convierte la consulta ingresada por el usuario a una consulta DNS
