@@ -150,7 +150,7 @@ void buscarIPporNombre(unsigned char *host){
         } 
     }
 
-    //read authorities
+    //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
     for(i=0;i<ntohs(dns->auth_count);i++){
         auth[i].name=ReadName(reader,buf,&finalizar);
 
@@ -197,7 +197,22 @@ void buscarIPporNombre(unsigned char *host){
         addit[i].resource=(struct R_DATA*)(reader);
         reader=reader+sizeof(struct R_DATA);
 
-        readTipoRecurso(addit, i, reader, buf, finalizar);        
+         addit[i].rdata= (unsigned char*)malloc(ntohs(addit[i].resource->data_len));
+
+        if(ntohs(addit[i].resource->type)==T_A) {
+            int j;
+            for(j=0;j<ntohs(addit[i].resource->data_len);j++){
+                addit[i].rdata[j]=reader[j];
+            }
+            addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
+            reader+=ntohs(addit[i].resource->data_len);
+            }
+        else if (ntohs(addit[i].resource->type)==T_MX) {
+        *addit[i].rdata = *(reader+1);
+            finalizar = 0 ;
+            addit[i].rdata = ReadName(reader, buf, &finalizar);
+            reader+=finalizar;
+        }    
     }
 
 
@@ -257,16 +272,19 @@ void mostrarAdditionalRecords(){
     if (ntohs(dns->add_count) > 0)
         printf("\n\n;; ADDITIONAL SECTION\n");
     for(i=0; i < ntohs(dns->add_count) ; i++) {
-        if(ntohs(addit[i].resource->type)==T_A) {
+      
+        //if(ntohs(addit[i].resource->type)==T_A) {
+            
             long *p;
             p=(long*)addit[i].rdata;
             a.sin_addr.s_addr=(*p);
             //printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
              printf(" %s       5    IN     A            ",addit[i].name);        
             printf("%s \n\n",  inet_ntoa(a.sin_addr));
-        }
-
+       // }
+        
         if(ntohs(addit[i].resource->type)==T_MX) {
+            printf("entre %i", i);
             long *p;
             p=(long*)addit[i].rdata;
            // printf("r date de las cosas %s \n",addit[i].rdata);
