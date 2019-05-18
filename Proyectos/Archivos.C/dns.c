@@ -116,7 +116,7 @@ void buscarIPporNombre(unsigned char *host){
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  //mueve el puntero	
 
-	 int finalizar=0;
+	int finalizar=0;
 	int i = 0;
     for (i=0; i < ntohs(dns->ans_count); i++){
        //finalizar=0;
@@ -136,15 +136,14 @@ void buscarIPporNombre(unsigned char *host){
                 reader+=ntohs(answers[i].resource->data_len);
         }
         else if (ntohs(answers[i].resource->type)==T_MX) {
-            *answers[i].rdata = *(reader+1);
-            
+            *answers[i].rdata = *(reader+1);         
             reader+=sizeof(short);
             answers[i].rdata+= sizeof(short);
 
             finalizar = 0 ;
             
             answers[i].rdata = ReadName(reader, buf, &finalizar);
-
+ 
             answers[i].rdata-= sizeof(short);
           
             reader+=finalizar;
@@ -154,18 +153,54 @@ void buscarIPporNombre(unsigned char *host){
     //read authorities
     for(i=0;i<ntohs(dns->auth_count);i++){
         auth[i].name=ReadName(reader,buf,&finalizar);
-        readGeneral(i, auth, reader, finalizar);    
 
-        auth[i].rdata=ReadName(reader,buf,&finalizar);
         reader+=finalizar;
+        auth[i].resource=(struct R_DATA*)(reader);
+        reader=reader+sizeof(struct R_DATA);       
+
+        printf("Reader1: %i - Finalizar %i \n", *reader, finalizar);
+        auth[i].rdata=ReadName(reader,buf,&finalizar);
+        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+        reader+=finalizar;
+
+        printf("Reader2: %i - Finalizar %i \n", *reader, finalizar);
+        auth[i].rdata = ReadName(reader, buf, &finalizar);
+        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+        reader+=finalizar;
+
+
+        printf("Reader3: %i - Finalizar %i \n", *reader, finalizar);       
+        auth[i].rdata =       ReadName(reader, buf, &finalizar);
+        printf("-Nombre servidor: %s \n\n", auth[i].rdata );        
+        reader+=finalizar;
+
+         
+        /*    reader+=4;
+            printf("reader %i", *reader);
+            auth[i].rdata+=4;
+
+            finalizar = 0 ;
+            
+            auth[i].rdata = ReadName(reader, buf, &finalizar);
+ 
+            auth[i].rdata-=4;
+
+        printf("-Nombre servidor: %s \n\n",auth[i].rdata+4);*/
+
     }
 
     //read additional
     for(i=0;i<ntohs(dns->add_count);i++)  {
         addit[i].name=ReadName(reader,buf,&finalizar);        
-        readGeneral(i, addit, reader, finalizar);
+        
+        reader+=finalizar;
+        addit[i].resource=(struct R_DATA*)(reader);
+        reader=reader+sizeof(struct R_DATA);
+
         readTipoRecurso(addit, i, reader, buf, finalizar);        
     }
+
+
 	mostrarRespuestas(answers, auth, addit);  
 	return;
 }
@@ -181,29 +216,36 @@ void mostrarContenidoRespuesta(){
 
 void mostrarAnswerRecords(){
 	int i;
-    printf("\n\nAnswer Records: %d \n" , ntohs(dns->ans_count) );
+    if (ntohs(dns->ans_count)>0)
+        printf("\n\n;; ANSWERS SECTION:\n");
     for(i=0 ; i < ntohs(dns->ans_count) ; i++){
-        printf("-Nombre: %s \n",answers[i].name);
+        
 
         if ( ntohs(answers[i].resource->type) == T_A) {
             long *p;
             p=(long*)answers[i].rdata;
             a.sin_addr.s_addr=(*p);
-            printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
+            printf(" %s          5    IN     A              ",answers[i].name);        
+            printf("%s \n\n", inet_ntoa(a.sin_addr));
         }
 
-        else if ( ntohs(answers[i].resource->type) == T_MX) {           
-            printf("MX %s \n",  answers[i].rdata+sizeof(short));
+        else if ( ntohs(answers[i].resource->type) == T_MX) {   
+            printf(" %s          5    IN     MX              ",answers[i].name);        
+            printf("%s \n",  answers[i].rdata+sizeof(short));
         }
     }
 }
 
 void mostrarAutoritiveRecords(){
 	int i;
-    printf("\n\nAuthoritive Records: %d \n" , ntohs(dns->auth_count) );
+    if (ntohs(dns->auth_count)>0)
+        printf("\n\nAuthoritive Records: %d \n" , ntohs(dns->auth_count) );
     for( i=0 ; i < ntohs(dns->auth_count) ; i++) {
         printf("-Nombre : %s \n",auth[i].name);
-        if(ntohs(auth[i].resource->type)==2){
+        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+        
+        if(ntohs(auth[i].resource->type)==T_LOC){
             printf("-Nombre servidor: %s \n\n",auth[i].rdata);
         }
         printf("\n");
@@ -212,14 +254,16 @@ void mostrarAutoritiveRecords(){
 
 void mostrarAdditionalRecords(){
 	int i;
-    printf("\n\nAdditional Records: %d \n" , ntohs(dns->add_count) );
+    if (ntohs(dns->add_count) > 0)
+        printf("\n\n;; ADDITIONAL SECTION\n");
     for(i=0; i < ntohs(dns->add_count) ; i++) {
-        printf("-Nombre: %s \n ",addit[i].name);
-        if(ntohs(addit[i].resource->type)==1) {
+        if(ntohs(addit[i].resource->type)==T_A) {
             long *p;
             p=(long*)addit[i].rdata;
             a.sin_addr.s_addr=(*p);
-            printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
+            //printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
+             printf(" %s       5    IN     A            ",addit[i].name);        
+            printf("%s \n\n",  inet_ntoa(a.sin_addr));
         }
 
         if(ntohs(addit[i].resource->type)==T_MX) {
@@ -227,7 +271,8 @@ void mostrarAdditionalRecords(){
             p=(long*)addit[i].rdata;
            // printf("r date de las cosas %s \n",addit[i].rdata);
             a.sin_addr.s_addr=(*p);
-            printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
+            printf(" %s       5    IN     A            ",answers[i].name);        
+            printf("%s \n",  answers[i].rdata+sizeof(short));
         }
     }
 }
@@ -266,22 +311,18 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
 
 	unsigned int offset;
 	unsigned int p=0,jumped=0;
-	//printf("reader %i \n", *(reader+1));
-    //printf("buffer %i \n", *buffer);
     //Lee los nombres en formato DNS(3www6google3com)
     while (*reader!=0) {
         if(*reader >= 192){
-            offset = (*reader)*256 + *(reader+1) - 49152; //convierte a binario
-           // printf("offset %i", offset);
+            offset = (*reader)*256 + *(reader+1) - 49152; 
             reader = buffer + offset - 1;
-           // printf("reader %i", *reader);
             jumped = 1; //we have jumped to another location so counting wont go up!
         }else        
             name[p++]=*reader;        
         reader = reader+1;
         if (jumped == 0)
             *count = *count + 1; //if we havent jumped to another location then we can count up
-    
+  
     }
     name[p]='\0'; //FInalizo string
     if(jumped==1)
@@ -298,6 +339,7 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
         name[i]='.';
     }
     name[i-1]='\0'; //remove the last dot
+    
     return name;    
 }
 
@@ -316,29 +358,18 @@ void readTipoRecurso(struct RES_RECORD record[20], int i,
       int j;
       for(j=0;j<ntohs(record[i].resource->data_len);j++){
 		record[i].rdata[j]=reader[j];
-        printf("reader d mierda %i", reader[j]);
       }
-        printf(" data1  %i", ntohs(record[i].resource->data_len));
       record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
-        reader+=ntohs(record[i].resource->data_len);
+      reader+=ntohs(record[i].resource->data_len);
      }
      else if (ntohs(record[i].resource->type)==T_MX) {
-         
-        printf("reader antes de sizeof %i \n\n", *reader);
        *record[i].rdata = *(reader+1);
-       
-      // reader+=sizeof(short);
-       
-        printf("reader dsp sizeof %i \n\n", *reader);
-      // record[i].rdata+= sizeof(short);
         finalizar = 0 ;
         record[i].rdata = ReadName(reader, buf, &finalizar);
+        reader+=finalizar;
+    }
+    else if (ntohs(record[i].resource->type)==T_MX){
 
-        printf("RECORD %s \n\n", record[i].rdata);
-         // record[i].rdata-= sizeof(short);
-       // record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
-      //  reader+=ntohs(record[i].resource->data_len);
-      reader+=finalizar;
     }
 }
 
