@@ -152,27 +152,7 @@ void setConsulta(char* consulta){
 }
 
 
-void descomponerIP(){
-    char cadena[100]= ".yahoo.com.";
-        int largo = strlen(cadena);
-        int i=0;
-        char auxiliar[100];
-        int j=0; 
-
-      for (i = largo-1; i >= 0; i--){
-            if (cadena[i]=='.')
-            {
-                   for(j=i; j<largo; j++)
-                   {      
-                             auxiliar[j]=cadena[j];
-                           //  printf("%c", auxiliar[j]);
-                   }
-                   printf("Cadena: %s \n", auxiliar);
-                   printf("\n\n");
-            }
-    }
-}
-
+	
 
 void evaluarIngreso(char* argv[], int argc){
 	if (argc > 6 || argc < 3)
@@ -188,8 +168,7 @@ void evaluarIngreso(char* argv[], int argc){
 				setPuerto();				
 				setTipoConsulta();
 				setTipoResolucionConsulta();		
-				setConsulta(argv[2]);		
-					//descomponerIP();
+				setConsulta(argv[2]);
 				iniciarDNS(parametros);
 			}
 		}

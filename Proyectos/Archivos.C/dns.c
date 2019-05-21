@@ -32,12 +32,14 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
     asignarInformacion(parametros);
     
     asignarServidorDNS(infoConsulta.servidor);
-    dest.sin_port = infoConsulta.puerto;
-    
+    dest.sin_port = infoConsulta.puerto;    
     
     buscarIPporNombre(infoConsulta.consulta);
-     if (infoConsulta.nroResolucionConsulta == 1){
+   if (infoConsulta.nroResolucionConsulta == 1){
         infoConsulta.nroConsulta = T_NS;
+       // descomponer();
+     //  char* mierda = "google.com";
+  // infoConsulta.consulta = mierda;
         buscarIPporNombre(infoConsulta.consulta);
      }
     return 0;
@@ -68,6 +70,45 @@ void asignarServidorDNS(char* servidor){
 		strcpy(servidorDNS, servidor);
 }
 
+
+char* descomponerIP(char cadena[1000], int inicio, int fin){
+	char sub[1000];
+   int position, length, c = 0;
+ 
+  position= inicio+2;
+  length=fin;
+ 
+   while (c < length) {
+      sub[c] = cadena[position+c-1];
+      c++;
+   }
+   sub[c] = '.';
+  
+   return sub;     
+}
+
+void descomponer(){
+	unsigned char* cadena = infoConsulta.consulta;
+  
+	int largo = strlen(cadena);
+    cadena[largo-1]='\0';
+    printf("ACAAAAA %s \n", cadena );
+    int i=0;
+    for (i = largo-1; i >= 0; i--){
+        if (cadena[i]=='.'){
+			char* substring = 	descomponerIP(cadena, i, largo);
+			 printf("Required substring is \"%s\"\n", substring);
+             buscarIPporNombre(substring);
+		}   
+		
+		if ((i == largo-1) && (cadena[largo-1]!='.')){
+			char* substring = ".";
+			 printf("Required substring is \"%s\"\n", substring);
+              buscarIPporNombre(substring);
+		}     
+    }
+}
+
 void leerRegistros(unsigned char buf[65536], unsigned char *reader){
     int finalizar=0;
 	int i = 0;
@@ -91,7 +132,6 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
            // *answers[i].rdata = *(reader+1);      
 
             answers[i].rdata=ReadName(reader, buf, &finalizar);
-            printf("numero del mail: %s",answers[i].rdata);
             reader+=sizeof(short);
             answers[i].rdata+= sizeof(short);
 
@@ -106,7 +146,6 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
              int j;
              answers[i].rdata = ReadName(reader, buf, &finalizar);   
              reader+=finalizar;         
-            printf("rdata NS %s", answers[i].rdata);
         }
     }
         //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
@@ -274,7 +313,7 @@ void mostrarAnswerRecords(){
         }
 
           else if ( ntohs(answers[i].resource->type) == T_NS) {   
-            printf(" %s          5    IN     MX              ",answers[i].name);        
+            printf(" %s          5    IN     NS              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata);
         }
     
@@ -379,37 +418,6 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
     
     return name;    
 }
-
-void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar){
-    reader+=finalizar;
-    record[i].resource=(struct R_DATA*)(reader);
-    reader=reader+sizeof(struct R_DATA)-2;
-}
-
-void readTipoRecurso(struct RES_RECORD record[20], int i, 
-    unsigned char *reader,  unsigned char buf[65536], int finalizar){
-
-    record[i].rdata= (unsigned char*)malloc(ntohs(record[i].resource->data_len));
-
-    if(ntohs(record[i].resource->type)==T_A) {
-      int j;
-      for(j=0;j<ntohs(record[i].resource->data_len);j++){
-		record[i].rdata[j]=reader[j];
-      }
-      record[i].rdata[ntohs(record[i].resource->data_len)]='\0';
-      reader+=ntohs(record[i].resource->data_len);
-     }
-     else if (ntohs(record[i].resource->type)==T_MX) {
-       *record[i].rdata = *(reader+1);
-        finalizar = 0 ;
-        record[i].rdata = ReadName(reader, buf, &finalizar);
-        reader+=finalizar;
-    }
-    else if (ntohs(record[i].resource->type)==T_MX){
-
-    }
-}
-
 
 /*
  * Convierte la consulta ingresada por el usuario a una consulta DNS
