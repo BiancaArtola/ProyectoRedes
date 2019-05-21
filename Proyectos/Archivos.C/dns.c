@@ -30,11 +30,16 @@ void asignarInformacion(struct informacionConsultaDNS parametros){
 
 int iniciarDNS(struct informacionConsultaDNS parametros){
     asignarInformacion(parametros);
-
+    
     asignarServidorDNS(infoConsulta.servidor);
     dest.sin_port = infoConsulta.puerto;
     
+    
     buscarIPporNombre(infoConsulta.consulta);
+     if (infoConsulta.nroResolucionConsulta == 1){
+        infoConsulta.nroConsulta = T_NS;
+        buscarIPporNombre(infoConsulta.consulta);
+     }
     return 0;
 }
 
@@ -63,60 +68,8 @@ void asignarServidorDNS(char* servidor){
 		strcpy(servidorDNS, servidor);
 }
 
-void buscarIPporNombre(unsigned char *host){	
-    unsigned char buf[65536],*qname,*reader;
-    int j;   
-	int tamanioMensajeSocket=0;
-       
-    struct QUESTION *qinfo = NULL;
-
-    printf("Evaluando la consulta: %s \n\n" , host);
-
-	int socketDNS;
-    socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-	//Se importa con la libreria netinet
-    dest.sin_family = AF_INET; //Familia de la direccion
-    dest.sin_addr.s_addr = inet_addr(servidorDNS);
-
-	dns = NULL;	
-    //Asigna la estructura DNS para queries estandar
-    dns = (struct DNS_HEADER *)&buf;
-	asignarPropiedadesDNS();    
-
-    //Apunta a la parte del query
-    tamanioMensajeSocket = sizeof(struct DNS_HEADER);
-    qname =(unsigned char*)&buf[tamanioMensajeSocket];
-    cambiarAFormatoDNS(qname, host);
-    
-    //Informacion de consulta
-    tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
-    qinfo =(struct QUESTION*)&buf[tamanioMensajeSocket];	
-    qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
-    qinfo->qclass = htons(VALOR_CLASS_IN); 
-
-	tamanioMensajeSocket+=sizeof(struct QUESTION);
-	int tamanioDest = sizeof(dest);
-    if (sendto(socketDNS, (char*)buf, tamanioMensajeSocket, 0, (struct sockaddr*)&dest, tamanioDest) < 0){
-        perror("Error en el servidor");
-        return 0;
-    }
-	
-    //socket, buffer donde se guarda el msj, tamano en bytes del buffer apuntado por el puntero buffer,
-    //flags(tipo de mensaje)
-    //modifica el dns
-    if (recvfrom(socketDNS, (char*)buf, 65536, 0, (struct sockaddr*)&dest, (socklen_t*)&tamanioDest ) < 0) {
-        perror("recvfrom failed");
-        return 0;
-    }
-
-    dns = (struct DNS_HEADER*) buf;
-    mostrarContenidoRespuesta(dns);
-    
-    tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
-    reader = &buf[tamanioDest];  //mueve el puntero	
-
-	int finalizar=0;
+void leerRegistros(unsigned char buf[65536], unsigned char *reader){
+    int finalizar=0;
 	int i = 0;
     for (i=0; i < ntohs(dns->ans_count); i++){        
         answers[i].name=ReadName(reader, buf, &finalizar);
@@ -151,78 +104,142 @@ void buscarIPporNombre(unsigned char *host){
             reader+=finalizar;
         }else if (ntohs(answers[i].resource->type)==T_NS){           
              int j;
-             answers[i].rdata = ReadName(reader, buf, &finalizar);            
+             answers[i].rdata = ReadName(reader, buf, &finalizar);   
+             reader+=finalizar;         
             printf("rdata NS %s", answers[i].rdata);
         }
     }
+        //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
+        for(i=0;i<ntohs(dns->auth_count);i++){
+                auth[i].name=ReadName(reader,buf,&finalizar);
 
-    //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
-    for(i=0;i<ntohs(dns->auth_count);i++){
-        auth[i].name=ReadName(reader,buf,&finalizar);
+                reader+=finalizar;
+                auth[i].resource=(struct R_DATA*)(reader);
+                reader=reader+sizeof(struct R_DATA);       
+                auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
 
-        reader+=finalizar;
-        auth[i].resource=(struct R_DATA*)(reader);
-        reader=reader+sizeof(struct R_DATA);       
-        auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
+                printf("Reader1: %i - Finalizar %i \n", *reader, finalizar);
+                auth[i].rdata=ReadName(reader,buf,&finalizar);
+                printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+                reader+=finalizar;
 
-        printf("Reader1: %i - Finalizar %i \n", *reader, finalizar);
-        auth[i].rdata=ReadName(reader,buf,&finalizar);
-        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-        reader+=finalizar;
-
-        printf("Reader2: %i - Finalizar %i \n", *reader, finalizar);
-        auth[i].rdata = ReadName(reader, buf, &finalizar);
-        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-        reader+=finalizar;
+                printf("Reader2: %i - Finalizar %i \n", *reader, finalizar);
+                auth[i].rdata = ReadName(reader, buf, &finalizar);
+                printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+                reader+=finalizar;
 
 
-        printf("Reader3: %i - Finalizar %i \n", *reader, finalizar);       
-        auth[i].rdata =       ReadName(reader, buf, &finalizar);
-        printf("-Nombre servidor: %s \n\n", auth[i].rdata );        
-        reader+=finalizar;
+                printf("Reader3: %i - Finalizar %i \n", *reader, finalizar);       
+                auth[i].rdata =       ReadName(reader, buf, &finalizar);
+                printf("-Nombre servidor: %s \n\n", auth[i].rdata );        
+                reader+=finalizar;
 
-         
-        /*    reader+=4;
-            printf("reader %i", *reader);
-            auth[i].rdata+=4;
-
-            finalizar = 0 ;
-            
-            auth[i].rdata = ReadName(reader, buf, &finalizar);
- 
-            auth[i].rdata-=4;
-
-        printf("-Nombre servidor: %s \n\n",auth[i].rdata+4);*/
-
-    }
-
-    //read additional
-    for(i=0;i<ntohs(dns->add_count);i++)  {
-        addit[i].name=ReadName(reader,buf,&finalizar);        
+                
+                /*    reader+=4;
+                    printf("reader %i", *reader);
+                    auth[i].rdata+=4;
+                    finalizar = 0 ;
+                    
+                    auth[i].rdata = ReadName(reader, buf, &finalizar);
         
-        reader+=finalizar;
-        addit[i].resource=(struct R_DATA*)(reader);
-        reader=reader+sizeof(struct R_DATA);
+                    auth[i].rdata-=4;
+                printf("-Nombre servidor: %s \n\n",auth[i].rdata+4);*/
 
-         addit[i].rdata= (unsigned char*)malloc(ntohs(addit[i].resource->data_len));
+            
+        }
 
-        if(ntohs(addit[i].resource->type)==T_A) {
-            int j;
-            for(j=0;j<ntohs(addit[i].resource->data_len);j++){
-                addit[i].rdata[j]=reader[j];
-            }
-            addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
-            reader+=ntohs(addit[i].resource->data_len);
-            }
-        else if (ntohs(addit[i].resource->type)==T_MX) {
-        *addit[i].rdata = *(reader+1);
-            finalizar = 0 ;
-            addit[i].rdata = ReadName(reader, buf, &finalizar);
-            reader+=finalizar;
-        }    
+        //read additional
+        for(i=0;i<ntohs(dns->add_count);i++)  {
+                addit[i].name=ReadName(reader,buf,&finalizar);        
+                
+                reader+=finalizar;
+                addit[i].resource=(struct R_DATA*)(reader);
+                reader=reader+sizeof(struct R_DATA);
+
+                addit[i].rdata= (unsigned char*)malloc(ntohs(addit[i].resource->data_len));
+
+                if(ntohs(addit[i].resource->type)==T_A) {
+                    int j;
+                    for(j=0;j<ntohs(addit[i].resource->data_len);j++){
+                        addit[i].rdata[j]=reader[j];
+                    }
+                    addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
+                    reader+=ntohs(addit[i].resource->data_len);
+                    }
+                else if (ntohs(addit[i].resource->type)==T_MX) {
+                *addit[i].rdata = *(reader+1);
+                    finalizar = 0 ;
+                    addit[i].rdata = ReadName(reader, buf, &finalizar);
+                    reader+=finalizar;
+                }    
+        }
+        
+    
+}
+imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned char *reader){
+   printf("hola");
+    qinfo->qtype = htons(infoConsulta.nroConsulta);
+    leerRegistros(buf, reader);
+}
+
+void buscarIPporNombre(unsigned char *host){	
+    unsigned char buf[65536],*qname,*reader;
+    int j;   
+	int tamanioMensajeSocket=0;
+       
+    struct QUESTION *qinfo = NULL;
+
+    printf("Evaluando la consulta: %s \n\n" , host);
+
+ 
+	int socketDNS;
+    socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	//Se importa con la libreria netinet
+    dest.sin_family = AF_INET; //Familia de la direccion
+    dest.sin_addr.s_addr = inet_addr(servidorDNS);
+
+	dns = NULL;	
+    //Asigna la estructura DNS para queries estandar
+    dns = (struct DNS_HEADER *)&buf;
+	asignarPropiedadesDNS();    
+
+    //Apunta a la parte del query
+    tamanioMensajeSocket = sizeof(struct DNS_HEADER);
+    qname =(unsigned char*)&buf[tamanioMensajeSocket];
+    cambiarAFormatoDNS(qname, host);
+    
+    //Informacion de consulta
+    tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
+    qinfo =(struct QUESTION*)&buf[tamanioMensajeSocket];	
+    qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
+    qinfo->qclass = htons(VALOR_CLASS_IN); 
+
+	tamanioMensajeSocket+=sizeof(struct QUESTION);
+	int tamanioDest = sizeof(dest);
+    if (sendto(socketDNS, (char*)buf, tamanioMensajeSocket, 0, (struct sockaddr*)&dest, tamanioDest) < 0){
+        perror("Error en el servidor");
+        return 0;
+    }
+	
+
+    if (recvfrom(socketDNS, (char*)buf, 65536, 0, (struct sockaddr*)&dest, (socklen_t*)&tamanioDest ) < 0) {
+        perror("recvfrom failed");
+        return 0;
     }
 
+    dns = (struct DNS_HEADER*) buf;
 
+
+    
+    mostrarContenidoRespuesta(dns);
+    
+    tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
+    reader = &buf[tamanioDest];  //mueve el puntero	
+
+
+    
+	leerRegistros(buf, reader);
 	mostrarRespuestas(answers, auth, addit);  
 	return;
 }
@@ -255,6 +272,12 @@ void mostrarAnswerRecords(){
             printf(" %s          5    IN     MX              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata+sizeof(short));
         }
+
+          else if ( ntohs(answers[i].resource->type) == T_NS) {   
+            printf(" %s          5    IN     MX              ",answers[i].name);        
+            printf(" %s \n", answers[i].rdata);
+        }
+    
     }
 }
 
