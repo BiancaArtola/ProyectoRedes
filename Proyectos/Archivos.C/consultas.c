@@ -151,6 +151,22 @@ void setConsulta(char* consulta){
 	parametros.consulta = consulta;
 }
 
+
+void descomponerIP(){
+    char* cadena= "yahoo.com.";
+    int largo = strlen(cadena);
+    int i;
+    char* auxiliar = ".";
+    for (i = largo; i > 0; i--){
+      printf("entre \n");
+	    if (cadena[i-1]=='.')
+            printf("Cadena: %s \n", auxiliar);
+       
+        
+    }
+}
+
+
 void evaluarIngreso(char* argv[], int argc){
 	if (argc > 6 || argc < 3)
 		mensajeAyuda();
@@ -166,7 +182,7 @@ void evaluarIngreso(char* argv[], int argc){
 				setTipoConsulta();
 				setTipoResolucionConsulta();		
 				setConsulta(argv[2]);		
-
+					//descomponerIP();
 				iniciarDNS(parametros);
 			}
 		}

@@ -14,6 +14,9 @@ char servidorDNS[10];
 #define T_A 1 
 #define T_MX 15 
 #define T_LOC 29
+#define T_NS 2
+
+
 //Valor de clase --> solo usamos internet (IN)
 #define VALOR_CLASS_IN 1
 
