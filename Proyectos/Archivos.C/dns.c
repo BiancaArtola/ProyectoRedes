@@ -92,7 +92,7 @@ void buscarIPporNombre(unsigned char *host){
     //Informacion de consulta
     tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
     qinfo =(struct QUESTION*)&buf[tamanioMensajeSocket];	
-    qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
+    qinfo->qtype = htons(2); //Tipo de consulta
     qinfo->qclass = htons(VALOR_CLASS_IN); 
 
 	tamanioMensajeSocket+=sizeof(struct QUESTION);
@@ -118,10 +118,9 @@ void buscarIPporNombre(unsigned char *host){
 
 	int finalizar=0;
 	int i = 0;
-    for (i=0; i < ntohs(dns->ans_count); i++){
-       //finalizar=0;
+    for (i=0; i < ntohs(dns->ans_count); i++){        
         answers[i].name=ReadName(reader, buf, &finalizar);
-         reader+=finalizar;
+        reader+=finalizar;
 
         answers[i].resource=(struct R_DATA*)(reader);
         reader=reader+sizeof(struct R_DATA);    
@@ -150,7 +149,11 @@ void buscarIPporNombre(unsigned char *host){
             answers[i].rdata-= sizeof(short);
           
             reader+=finalizar;
-        } 
+        }else if (ntohs(answers[i].resource->type)==T_NS){           
+             int j;
+             answers[i].rdata = ReadName(reader, buf, &finalizar);            
+            printf("rdata NS %s", answers[i].rdata);
+        }
     }
 
     //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
