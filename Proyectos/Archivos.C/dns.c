@@ -136,7 +136,10 @@ void buscarIPporNombre(unsigned char *host){
                 reader+=ntohs(answers[i].resource->data_len);
         }
         else if (ntohs(answers[i].resource->type)==T_MX) {
-            *answers[i].rdata = *(reader+1);         
+           // *answers[i].rdata = *(reader+1);      
+
+            answers[i].rdata=ReadName(reader, buf, &finalizar);
+            printf("numero del mail: %s",answers[i].rdata);
             reader+=sizeof(short);
             answers[i].rdata+= sizeof(short);
 
@@ -157,6 +160,7 @@ void buscarIPporNombre(unsigned char *host){
         reader+=finalizar;
         auth[i].resource=(struct R_DATA*)(reader);
         reader=reader+sizeof(struct R_DATA);       
+        auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
 
         printf("Reader1: %i - Finalizar %i \n", *reader, finalizar);
         auth[i].rdata=ReadName(reader,buf,&finalizar);
@@ -246,7 +250,7 @@ void mostrarAnswerRecords(){
 
         else if ( ntohs(answers[i].resource->type) == T_MX) {   
             printf(" %s          5    IN     MX              ",answers[i].name);        
-            printf("%s \n",  answers[i].rdata+sizeof(short));
+            printf(" %s \n", answers[i].rdata+sizeof(short));
         }
     }
 }
@@ -254,14 +258,16 @@ void mostrarAnswerRecords(){
 void mostrarAutoritiveRecords(){
 	int i;
     if (ntohs(dns->auth_count)>0)
-        printf("\n\nAuthoritive Records: %d \n" , ntohs(dns->auth_count) );
+        printf("\n\n;; AUTHORITIVE SECTION:\n");
     for( i=0 ; i < ntohs(dns->auth_count) ; i++) {
-        printf("-Nombre : %s \n",auth[i].name);
+    /*    printf("-Nombre : %s \n",auth[i].name);
         printf("-Nombre servidor: %s \n\n",auth[i].rdata);
         printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-        
+        */
         if(ntohs(auth[i].resource->type)==T_LOC){
             printf("-Nombre servidor: %s \n\n",auth[i].rdata);
+            printf(" %s          5    IN     SOA              ",auth[i].name);        
+            printf(" %s \n",auth[i].rdata);
         }
         printf("\n");
     }
@@ -272,27 +278,14 @@ void mostrarAdditionalRecords(){
     if (ntohs(dns->add_count) > 0)
         printf("\n\n;; ADDITIONAL SECTION\n");
     for(i=0; i < ntohs(dns->add_count) ; i++) {
-      
-        //if(ntohs(addit[i].resource->type)==T_A) {
-            
             long *p;
             p=(long*)addit[i].rdata;
             a.sin_addr.s_addr=(*p);
             //printf("-Direccion IP (IPv4): %s \n\n",inet_ntoa(a.sin_addr));
              printf(" %s       5    IN     A            ",addit[i].name);        
-            printf("%s \n\n",  inet_ntoa(a.sin_addr));
-       // }
-        
-        if(ntohs(addit[i].resource->type)==T_MX) {
-            printf("entre %i", i);
-            long *p;
-            p=(long*)addit[i].rdata;
-           // printf("r date de las cosas %s \n",addit[i].rdata);
-            a.sin_addr.s_addr=(*p);
-            printf(" %s       5    IN     A            ",answers[i].name);        
-            printf("%s \n",  answers[i].rdata+sizeof(short));
-        }
+            printf("%s \n",  inet_ntoa(a.sin_addr));
     }
+            printf("\n");
 }
 
 void mostrarRespuestas(){
