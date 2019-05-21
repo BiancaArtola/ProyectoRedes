@@ -92,7 +92,7 @@ void buscarIPporNombre(unsigned char *host){
     //Informacion de consulta
     tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
     qinfo =(struct QUESTION*)&buf[tamanioMensajeSocket];	
-    qinfo->qtype = htons(2); //Tipo de consulta
+    qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
     qinfo->qclass = htons(VALOR_CLASS_IN); 
 
 	tamanioMensajeSocket+=sizeof(struct QUESTION);
