@@ -2,9 +2,15 @@
 #include<string.h>
 #include<stdlib.h>
 #include<sys/socket.h>
-#include<arpa/inet.h>
-#include<netinet/in.h>
-#include<unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/nameser.h>
+#include <sys/types.h> 
+#include <limits.h>
+#include <errno.h>
+#include <stdint.h>
+//#include "loc_ntoa.h"
 
 //Servidor DNS
 char servidorDNS[10];
@@ -75,12 +81,12 @@ struct RES_RECORD{
     unsigned char *rdata;
 };
 
-//Estructura de una query
+/*//Estructura de una query
 typedef struct{
     unsigned char *name;
     struct QUESTION *ques;
 } QUERY;
-
+*/
 struct informacionConsultaDNS {
 	char* servidor;
 	char* puerto;

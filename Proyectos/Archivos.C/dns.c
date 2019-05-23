@@ -1,5 +1,6 @@
 #include "../Archivos.H/dns.h"
 
+
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
 struct sockaddr_in a;
@@ -17,8 +18,9 @@ void mostrarRespuestas();
 void asignarPropiedadesDNS();
 void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar);
 void readTipoRecurso(struct RES_RECORD record[20], int i,unsigned char *reader,  unsigned char buf[65536], int finalizar);
-u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count);
+u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador);
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
+static const char *precsize_ntoa(u_int8_t  prec);
 
 void asignarInformacion(struct informacionConsultaDNS parametros){
     infoConsulta.servidor = parametros.servidor;
@@ -35,13 +37,13 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
     dest.sin_port = infoConsulta.puerto;    
     
     buscarIPporNombre(infoConsulta.consulta);
-   if (infoConsulta.nroResolucionConsulta == 1){
+   /*if (infoConsulta.nroResolucionConsulta == 1){
         infoConsulta.nroConsulta = T_NS;
        // descomponer();
      //  char* mierda = "google.com";
   // infoConsulta.consulta = mierda;
         buscarIPporNombre(infoConsulta.consulta);
-     }
+     }*/
     return 0;
 }
 
@@ -147,6 +149,10 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
              answers[i].rdata = ReadName(reader, buf, &finalizar);   
              reader+=finalizar;         
         }
+        else if (ntohs(answers[i].resource->type)==T_LOC)
+        {
+            consulta_LOC(reader);
+        }
     }
         //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
         for(i=0;i<ntohs(dns->auth_count);i++){
@@ -156,23 +162,6 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                 auth[i].resource=(struct R_DATA*)(reader);
                 reader=reader+sizeof(struct R_DATA);       
                 auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
-
-                printf("Reader1: %i - Finalizar %i \n", *reader, finalizar);
-                auth[i].rdata=ReadName(reader,buf,&finalizar);
-                printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-                reader+=finalizar;
-
-                printf("Reader2: %i - Finalizar %i \n", *reader, finalizar);
-                auth[i].rdata = ReadName(reader, buf, &finalizar);
-                printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-                reader+=finalizar;
-
-
-                printf("Reader3: %i - Finalizar %i \n", *reader, finalizar);       
-                auth[i].rdata =       ReadName(reader, buf, &finalizar);
-                printf("-Nombre servidor: %s \n\n", auth[i].rdata );        
-                reader+=finalizar;
-
                 
                 /*    reader+=4;
                     printf("reader %i", *reader);
@@ -206,7 +195,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                     reader+=ntohs(addit[i].resource->data_len);
                     }
                 else if (ntohs(addit[i].resource->type)==T_MX) {
-                *addit[i].rdata = *(reader+1);
+                    // *addit[i].rdata = *(reader+1);
                     finalizar = 0 ;
                     addit[i].rdata = ReadName(reader, buf, &finalizar);
                     reader+=finalizar;
@@ -246,7 +235,11 @@ void buscarIPporNombre(unsigned char *host){
     //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
     qname =(unsigned char*)&buf[tamanioMensajeSocket];
-    cambiarAFormatoDNS(qname, host);
+    if (infoConsulta.nroConsulta==T_LOC)
+        cambiarAFormatoDominio("SW1A2AA.find.me.uk", qname);
+    else
+         cambiarAFormatoDNS(qname, host);
+
     
     //Informacion de consulta
     tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
@@ -268,16 +261,12 @@ void buscarIPporNombre(unsigned char *host){
     }
 
     dns = (struct DNS_HEADER*) buf;
-
-
     
     mostrarContenidoRespuesta(dns);
     
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  //mueve el puntero	
 
-
-    
 	leerRegistros(buf, reader);
 	mostrarRespuestas(answers, auth, addit);  
 	return;
@@ -295,27 +284,32 @@ void mostrarContenidoRespuesta(){
 void mostrarAnswerRecords(){
 	int i;
     if (ntohs(dns->ans_count)>0)
-        printf("\n\n;; ANSWERS SECTION:\n");
+        printf("\n\n;; ANSWERS SECTION\n");
     for(i=0 ; i < ntohs(dns->ans_count) ; i++){
-        
-
         if ( ntohs(answers[i].resource->type) == T_A) {
             long *p;
             p=(long*)answers[i].rdata;
             a.sin_addr.s_addr=(*p);
-            printf(" %s          5    IN     A              ",answers[i].name);        
+            printf(" %s              IN     A              ",answers[i].name);        
             printf("%s \n\n", inet_ntoa(a.sin_addr));
         }
 
         else if ( ntohs(answers[i].resource->type) == T_MX) {   
-            printf(" %s          5    IN     MX              ",answers[i].name);        
+            printf(" %s             IN     MX              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata+sizeof(short));
         }
 
           else if ( ntohs(answers[i].resource->type) == T_NS) {   
-            printf(" %s          5    IN     NS              ",answers[i].name);        
+            printf(" %s              IN     NS              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata);
         }
+         else if ( ntohs(answers[i].resource->type) == T_LOC)
+         {
+            printf(" %s              IN     LOC              ",answers[i].name); 
+            printf(" %s \n", answers[i].rdata);
+         }
+
+
     
     }
 }
@@ -329,11 +323,9 @@ void mostrarAutoritiveRecords(){
         printf("-Nombre servidor: %s \n\n",auth[i].rdata);
         printf("-Nombre servidor: %s \n\n",auth[i].rdata);
         */
-        if(ntohs(auth[i].resource->type)==T_LOC){
             printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-            printf(" %s          5    IN     SOA              ",auth[i].name);        
-            printf(" %s \n",auth[i].rdata);
-        }
+            printf(" %s          5    IN     LOC             ",auth[i].name);        
+           // printf(" %s \n",auth[i].rdata);
         printf("\n");
     }
 }
@@ -372,14 +364,14 @@ void asignarPropiedadesDNS(){
     dns->cd = 0;
     dns->rcode = 0;
     dns->q_count = htons(1); //we have only 1 question
-    dns->ans_count = 0;
+    dns->ans_count= 0;
     dns->auth_count = 0;
     dns->add_count = 0;
 }
 
 
-u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){ 
-    *count = 1;
+u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador){ 
+    *contador = 1;
     
     unsigned char *name;
     name = (unsigned char*)malloc(256);
@@ -392,17 +384,17 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
         if(*reader >= 192){
             offset = (*reader)*256 + *(reader+1) - 49152; 
             reader = buffer + offset - 1;
-            jumped = 1; //we have jumped to another location so counting wont go up!
+            jumped = 1; //we have jumped to another location so contadoring wont go up!
         }else        
             name[p++]=*reader;        
         reader = reader+1;
         if (jumped == 0)
-            *count = *count + 1; //if we havent jumped to another location then we can count up
+            *contador = *contador + 1; //if we havent jumped to another location then we can contador up
   
     }
     name[p]='\0'; //FInalizo string
     if(jumped==1)
-        *count = *count + 1; //number of steps we actually moved forward in the packet
+        *contador = *contador + 1; //number of steps we actually moved forward in the packet
 
 	 int i, j;
     //now convert 3www6google3com0 to www.google.com
@@ -422,17 +414,138 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* count){
 /*
  * Convierte la consulta ingresada por el usuario a una consulta DNS
  * */
-void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host){
-    int lock = 0 ;
-    strcat((char*)host,".");
-	
+ cambiarAFormatoDNS(unsigned char* dns,unsigned char* host){ 
+    int lock = 0 ;     
+    strcat((char*)host,"."); 	 	
+    int i;     
+    for(i = 0 ; i < strlen((char*)host) ; i++)         
+        if(host[i]=='.') 
+        {             
+            *dns++ = i-lock;             
+            for(;lock<i;lock++)                             
+            *dns++=host[lock];             
+            lock++;         
+        }         
+    *dns++='\0'; 
+    }
+void cambiarAFormatoDominio(char * dominio, unsigned char * dominioDns){
+	int largoDelDominio = strlen(dominio);
+	char * part = dominio;
+	int contador = 0;
 	int i;
-    for(i = 0 ; i < strlen((char*)host) ; i++)
-        if(host[i]=='.') {
-            *dns++ = i-lock;
-            for(;lock<i;lock++)            
-                *dns++=host[lock];
-            lock++;
-        }    
-    *dns++='\0';
+	for(i = 0;i <= largoDelDominio ; i++){
+		if(*dominio == '.' || i == largoDelDominio){
+			int j;
+			*dominioDns++ = contador + 0;
+			for(j = 0;j<contador;j++){
+				*dominioDns++ = *part++;
+			}
+			part++;
+			contador = 0;
+		}
+		else {
+			contador++;	
+		}
+		dominio++;
+	}
+	*dominioDns++ = 0;
+	*dominioDns = '\0';
 }
+
+char * consulta_LOC(unsigned char *reader)
+{
+	 static char tmpbuf[255*3];
+	 register char *cp;
+	 register const u_char *rcp;
+	 int latdeg, latmin, latsec, latsecfrac;
+	 int longdeg, longmin, longsec, longsecfrac;
+	 char northsouth, eastwest;
+	 int altmeters, altfrac, altsign;
+	 const int referencealt = 100000 * 100;
+	 int32_t latval, longval, altval;
+	 u_int32_t templ;
+	 u_int8_t sizeval, hpval, vpval, versionval;
+	 char *sizestr, *hpstr, *vpstr;
+	 
+     rcp = reader;
+
+	 versionval = *rcp++;
+	 if (versionval) {
+		 sprintf(cp,"; error: unknown LOC RR version");
+		 return (cp);
+	 }
+
+	 sizeval = *rcp++;
+	 hpval = *rcp++;
+	 vpval = *rcp++;
+
+	 GETLONG(templ,rcp);
+	 latval = (templ - ((unsigned)1<<31));
+
+	 GETLONG(templ,rcp);
+	 longval = (templ - ((unsigned)1<<31));
+
+	 GETLONG(templ,rcp);
+	 if (templ < referencealt) { /* below WGS 84 spheroid */
+		 altval = referencealt - templ;
+		 altsign = -1;
+	 } else {
+        altval = templ - referencealt;
+        altsign = 1;
+    }
+    if (latval < 0) {
+        northsouth = 'S';
+        latval = -latval;
+    }
+    else
+        northsouth = 'N';
+
+    latsecfrac = latval % 1000;
+    latval = latval / 1000;
+    latsec = latval % 60;
+    latval = latval / 60;
+    latmin = latval % 60;
+    latval = latval / 60;
+    latdeg = latval;
+    if (longval < 0) {
+        eastwest = 'W';
+        longval = -longval;
+    }
+    else
+        eastwest = 'E';
+    longsecfrac = longval % 1000;
+    longval = longval / 1000;
+    longsec = longval % 60;
+    longval = longval / 60;
+    longmin = longval % 60;
+    longval = longval / 60;
+    longdeg = longval;
+    altfrac = altval % 100;
+    altmeters = (altval / 100) * altsign;
+
+    sizestr = precsize_ntoa(sizeval);
+    hpstr = precsize_ntoa(hpval);
+    vpstr = precsize_ntoa(vpval);
+
+    sprintf(cp,"%d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm", latdeg, latmin, latsec, latsecfrac, northsouth,
+        longdeg, longmin, longsec, longsecfrac, eastwest,
+        altmeters, altfrac, sizestr, hpstr, vpstr);
+ 
+    return cp;
+}
+
+static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
+ 1000000,10000000,100000000,1000000000};
+
+static const char *precsize_ntoa(u_int8_t  prec)
+{
+    static char retbuf[sizeof("90000000.00")];
+    unsigned long val;
+    int mantissa, exponent;
+    mantissa = (int)((prec >> 4) & 0x0f) % 10;
+    exponent = (int)((prec >> 0) & 0x0f) % 10;
+    val = mantissa * poweroften[exponent];
+    (void) sprintf(retbuf,"%d.%.2d", val/100, val%100);
+    return (retbuf);
+}
+
