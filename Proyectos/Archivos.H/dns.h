@@ -95,3 +95,22 @@ struct informacionConsultaDNS {
     unsigned char* consulta;
 }infoConsulta;
 
+struct resultadoLOC{
+ int latdeg;
+ int latmin;
+ int latsec;
+ int latsecfrac;
+ int longdeg;
+ int longmin;
+ int longsec;
+ int longsecfrac;
+ char northsouth;
+ char eastwest;
+  int altmeters;
+  int altfrac;
+  int altsign;
+  char *sizestr;
+  char* *hpstr;
+  char *vpstr;
+}resLOC;
+

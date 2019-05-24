@@ -1,5 +1,5 @@
 #include "../Archivos.H/dns.h"
-
+//#include "../Archivos.H/asignacionConsulta.h"
 
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
@@ -22,34 +22,11 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador);
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
 static const char *precsize_ntoa(u_int8_t  prec);
 
-void asignarInformacion(struct informacionConsultaDNS parametros){
-    infoConsulta.servidor = parametros.servidor;
-    infoConsulta.puerto = parametros.puerto;
-    infoConsulta.nroConsulta = parametros.nroConsulta;
-    infoConsulta.nroResolucionConsulta = parametros.nroResolucionConsulta;
-    infoConsulta.consulta = parametros.consulta;
-}
-
-int iniciarDNS(struct informacionConsultaDNS parametros){
-    asignarInformacion(parametros);
-    
-    asignarServidorDNS(infoConsulta.servidor);
-    dest.sin_port = infoConsulta.puerto;    
-    
-    buscarIPporNombre(infoConsulta.consulta);
-   /*if (infoConsulta.nroResolucionConsulta == 1){
-        infoConsulta.nroConsulta = T_NS;
-       // descomponer();
-     //  char* mierda = "google.com";
-  // infoConsulta.consulta = mierda;
-        buscarIPporNombre(infoConsulta.consulta);
-     }*/
-    return 0;
-}
 
 /*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
  * Si el usuario ya asigno un servidor, se setea ese servidor
  * */
+
 void asignarServidorDNS(char* servidor){
 	if (strcmp(servidor, "") == 0){
 		FILE *fp;
@@ -70,46 +47,38 @@ void asignarServidorDNS(char* servidor){
 	}
 	else
 		strcpy(servidorDNS, servidor);
+    infoConsulta.servidor = servidorDNS;
+    
 }
 
+void asignarInformacion(struct informacionConsultaDNS parametros){
+    infoConsulta.servidor = parametros.servidor;
+    infoConsulta.puerto = parametros.puerto;
+    infoConsulta.nroConsulta = parametros.nroConsulta;
+    infoConsulta.nroResolucionConsulta = parametros.nroResolucionConsulta;
+    infoConsulta.consulta = parametros.consulta;
+}
 
-char* descomponerIP(char cadena[1000], int inicio, int fin){
-	char sub[1000];
-   int position, length, c = 0;
- 
-  position= inicio+2;
-  length=fin;
- 
-   while (c < length) {
-      sub[c] = cadena[position+c-1];
-      c++;
-   }
-   sub[c] = '.';
+int iniciarDNS(struct informacionConsultaDNS parametros){
+  //  asignarStruct(parametros, infoConsulta);
   
-   return sub;     
+    asignarInformacion(parametros);
+       dest.sin_port = infoConsulta.puerto;  
+    asignarServidorDNS(infoConsulta.servidor);
+     
+  
+    buscarIPporNombre(infoConsulta.consulta);
+   /*if (infoConsulta.nroResolucionConsulta == 1){
+        infoConsulta.nroConsulta = T_NS;
+       // descomponer();
+     //  char* mierda = "google.com";
+  // infoConsulta.consulta = mierda;
+        buscarIPporNombre(infoConsulta.consulta);
+     }*/
+    return 0;
 }
 
-void descomponer(){
-	unsigned char* cadena = infoConsulta.consulta;
-  
-	int largo = strlen(cadena);
-    cadena[largo-1]='\0';
-    printf("ACAAAAA %s \n", cadena );
-    int i=0;
-    for (i = largo-1; i >= 0; i--){
-        if (cadena[i]=='.'){
-			char* substring = 	descomponerIP(cadena, i, largo);
-			 printf("Required substring is \"%s\"\n", substring);
-             buscarIPporNombre(substring);
-		}   
-		
-		if ((i == largo-1) && (cadena[largo-1]!='.')){
-			char* substring = ".";
-			 printf("Required substring is \"%s\"\n", substring);
-              buscarIPporNombre(substring);
-		}     
-    }
-}
+
 
 void leerRegistros(unsigned char buf[65536], unsigned char *reader){
     int finalizar=0;
@@ -162,18 +131,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                 auth[i].resource=(struct R_DATA*)(reader);
                 reader=reader+sizeof(struct R_DATA);       
                 auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
-                
-                /*    reader+=4;
-                    printf("reader %i", *reader);
-                    auth[i].rdata+=4;
-                    finalizar = 0 ;
-                    
-                    auth[i].rdata = ReadName(reader, buf, &finalizar);
-        
-                    auth[i].rdata-=4;
-                printf("-Nombre servidor: %s \n\n",auth[i].rdata+4);*/
-
-            
+                            
         }
 
         //read additional
@@ -213,19 +171,15 @@ imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned c
 void buscarIPporNombre(unsigned char *host){	
     unsigned char buf[65536],*qname,*reader;
     int j;   
-	int tamanioMensajeSocket=0;
-       
+	int tamanioMensajeSocket=0;       
     struct QUESTION *qinfo = NULL;
 
     printf("Evaluando la consulta: %s \n\n" , host);
-
- 
-	int socketDNS;
-    socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	
 
 	//Se importa con la libreria netinet
     dest.sin_family = AF_INET; //Familia de la direccion
-    dest.sin_addr.s_addr = inet_addr(servidorDNS);
+    dest.sin_addr.s_addr = inet_addr(infoConsulta.servidor);
 
 	dns = NULL;	
     //Asigna la estructura DNS para queries estandar
@@ -247,13 +201,15 @@ void buscarIPporNombre(unsigned char *host){
     qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
     qinfo->qclass = htons(VALOR_CLASS_IN); 
 
+
+    int socketDNS;
+    socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	tamanioMensajeSocket+=sizeof(struct QUESTION);
 	int tamanioDest = sizeof(dest);
     if (sendto(socketDNS, (char*)buf, tamanioMensajeSocket, 0, (struct sockaddr*)&dest, tamanioDest) < 0){
         perror("Error en el servidor");
         return 0;
-    }
-	
+    }	
 
     if (recvfrom(socketDNS, (char*)buf, 65536, 0, (struct sockaddr*)&dest, (socklen_t*)&tamanioDest ) < 0) {
         perror("recvfrom failed");
@@ -293,7 +249,6 @@ void mostrarAnswerRecords(){
             printf(" %s              IN     A              ",answers[i].name);        
             printf("%s \n\n", inet_ntoa(a.sin_addr));
         }
-
         else if ( ntohs(answers[i].resource->type) == T_MX) {   
             printf(" %s             IN     MX              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata+sizeof(short));
@@ -306,7 +261,10 @@ void mostrarAnswerRecords(){
          else if ( ntohs(answers[i].resource->type) == T_LOC)
          {
             printf(" %s              IN     LOC              ",answers[i].name); 
-            printf(" %s \n", answers[i].rdata);
+             printf("%d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm \n", 
+             resLOC.latdeg, resLOC.latmin, resLOC.latsec, resLOC.latsecfrac,
+            resLOC.northsouth, resLOC.longdeg, resLOC.longmin, resLOC.longsec, resLOC.longsecfrac, 
+            resLOC.eastwest,resLOC.altmeters, resLOC.altfrac, resLOC.sizestr, resLOC.hpstr, resLOC.vpstr);
          }
 
 
@@ -452,7 +410,7 @@ void cambiarAFormatoDominio(char * dominio, unsigned char * dominioDns){
 	*dominioDns = '\0';
 }
 
-char * consulta_LOC(unsigned char *reader)
+void consulta_LOC(unsigned char *reader)
 {
 	 static char tmpbuf[255*3];
 	 register char *cp;
@@ -527,11 +485,23 @@ char * consulta_LOC(unsigned char *reader)
     hpstr = precsize_ntoa(hpval);
     vpstr = precsize_ntoa(vpval);
 
-    sprintf(cp,"%d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm", latdeg, latmin, latsec, latsecfrac, northsouth,
-        longdeg, longmin, longsec, longsecfrac, eastwest,
-        altmeters, altfrac, sizestr, hpstr, vpstr);
- 
-    return cp;
+    resLOC.latdeg = latdeg;
+    resLOC.latsec = latsec;
+    resLOC.latmin = latmin;
+    resLOC.latsecfrac = latsecfrac;
+    resLOC.northsouth = northsouth;
+    resLOC.longdeg = longdeg;
+    resLOC.longmin = longmin;
+    resLOC.longsec = longsec;
+    resLOC.longsecfrac = longsecfrac;
+    resLOC.eastwest = eastwest;
+    resLOC.altmeters = altmeters;
+    resLOC.altfrac = altfrac;
+    resLOC.sizestr = sizestr;
+    resLOC.hpstr = hpstr;
+    resLOC.vpstr = vpstr;
+
+
 }
 
 static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
