@@ -83,6 +83,7 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
 void leerRegistros(unsigned char buf[65536], unsigned char *reader){
     int finalizar=0;
 	int i = 0;
+     printf("\n\n;; ANSWERS SECTION\n");
     for (i=0; i < ntohs(dns->ans_count); i++){        
         answers[i].name=ReadName(reader, buf, &finalizar);
         reader+=finalizar;
@@ -125,17 +126,40 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
             consulta_LOC(reader);
         }
     }
+        printf("\n\n;; AUTHORITIVE SECTION:\n");
         //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
         for(i=0;i<ntohs(dns->auth_count);i++){
                 auth[i].name=ReadName(reader,buf,&finalizar);
 
                 reader+=finalizar;
-                auth[i].resource=(struct R_DATA*)(reader);
-                reader=reader+sizeof(struct R_DATA);       
-                auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
-                            
-        }
 
+                printf("%s \n", auth[i].name);
+
+                auth[i].resource=(struct R_DATA*)(reader);
+                reader=reader+sizeof(struct R_DATA);      
+
+              //  auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
+
+                if (ntohs(auth[i].resource->type)==T_SOA)
+                {
+                    printf("       IN     SOA             ");
+
+                    auth[i].rdata=ReadName(reader,buf,&finalizar);
+                    reader+=finalizar;
+                    printf("%s  ",  auth[i].rdata);
+
+                    auth[i].rdata=ReadName(reader,buf,&finalizar);
+                    reader+=finalizar;
+                    printf("%s  ",  auth[i].rdata);
+
+                    struct resultadoSOA *resSOA=(struct resultadoSOA*) reader;
+
+                    printf("%d  %d  %d  %d  %d \n", ntohl(resSOA->serial), ntohl(resSOA->refresh), ntohl(resSOA->retry),
+                    ntohl(resSOA->expire), ntohl(resSOA->minimum));
+
+                    auth[i].rdata+=sizeof(struct resultadoSOA);
+                } 
+    }                            
         //read additional
         for(i=0;i<ntohs(dns->add_count);i++)  {
                 addit[i].name=ReadName(reader,buf,&finalizar);        
@@ -190,9 +214,9 @@ void buscarIPporNombre(unsigned char *host){
     //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
     qname =(unsigned char*)&buf[tamanioMensajeSocket];
-    if (infoConsulta.nroConsulta==T_LOC)
-        cambiarAFormatoDominio("SW1A2AA.find.me.uk", qname);
-    else
+    //if (infoConsulta.nroConsulta==T_LOC)
+   //     cambiarAFormatoDominio("SW1A2AA.find.me.uk", qname);
+   // else
          cambiarAFormatoDNS(qname, host);
 
     
@@ -250,10 +274,10 @@ void mostrarAnswerRecords(){
             printf(" %s              IN     A              ",answers[i].name);        
             printf("%s \n\n", inet_ntoa(a.sin_addr));
         }
-        else if ( ntohs(answers[i].resource->type) == T_MX) {   
+        /*else if ( ntohs(answers[i].resource->type) == T_MX) {   
             printf(" %s             IN     MX              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata+sizeof(short));
-        }
+        }*/
 
           else if ( ntohs(answers[i].resource->type) == T_NS) {   
             printf(" %s              IN     NS              ",answers[i].name);        
@@ -272,18 +296,18 @@ void mostrarAnswerRecords(){
 
 void mostrarAutoritiveRecords(){
 	int i;
-    if (ntohs(dns->auth_count)>0)
-        printf("\n\n;; AUTHORITIVE SECTION:\n");
+    //if (ntohs(dns->auth_count)>0)
+   /*     printf("\n\n;; AUTHORITIVE SECTION:\n");
     for( i=0 ; i < ntohs(dns->auth_count) ; i++) {
-    /*    printf("-Nombre : %s \n",auth[i].name);
+        printf("-Nombre : %s \n",auth[i].name);
         printf("-Nombre servidor: %s \n\n",auth[i].rdata);
         printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-        */
+        
             printf("-Nombre servidor: %s \n\n",auth[i].rdata);
             printf(" %s          5    IN     LOC             ",auth[i].name);        
            // printf(" %s \n",auth[i].rdata);
         printf("\n");
-    }
+    }*/
 }
 
 void mostrarAdditionalRecords(){

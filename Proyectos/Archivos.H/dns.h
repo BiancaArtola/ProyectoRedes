@@ -21,6 +21,7 @@ char servidorDNS[10];
 #define T_MX 15 
 #define T_LOC 29
 #define T_NS 2
+#define T_SOA 6
 
 
 //Valor de clase --> solo usamos internet (IN)
@@ -114,3 +115,10 @@ struct resultadoLOC{
   char *vpstr;
 }resLOC;
 
+struct resultadoSOA{
+    unsigned int serial;
+    unsigned int refresh;
+    unsigned int retry;
+    unsigned int expire;
+    unsigned int minimum;
+}resSOA;
