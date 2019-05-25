@@ -104,8 +104,8 @@ struct resultadoLOC{
  int longmin;
  int longsec;
  int longsecfrac;
- char northsouth;
- char eastwest;
+ char nortesur;
+ char esteoeste;
   int altmeters;
   int altfrac;
   int altsign;

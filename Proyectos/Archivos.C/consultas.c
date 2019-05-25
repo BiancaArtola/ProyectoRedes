@@ -14,6 +14,20 @@ struct parametrosConsulta {
 char* tipoConsulta;
 char* tipoResolucionConsulta;
 
+int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros);
+int buscarPuerto(char* parametroServidor);
+void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuerto);
+void asignarServidorSinPuerto(char parametroServidor[]);
+void evaluarPuerto(char parametroServidor[]);
+void asignarTipoConsultaPorDefecto();
+int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int comienzoParametros);
+int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], int cantParametros);
+void setPuerto();
+void setTipoConsulta();
+void setTipoResolucionConsulta();
+void setConsulta(char* consulta);
+void evaluarIngreso(char* argv[], int argc); 
+
 int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 	//Retorna 0 si el servidor fue asignado. 1 en caso contrario.
 	char* parametroServidor=(char*)malloc(100);
@@ -150,9 +164,6 @@ void setTipoResolucionConsulta(){
 void setConsulta(char* consulta){
 	parametros.consulta = consulta;
 }
-
-
-	
 
 void evaluarIngreso(char* argv[], int argc){
 	if (argc > 6 || argc < 3)

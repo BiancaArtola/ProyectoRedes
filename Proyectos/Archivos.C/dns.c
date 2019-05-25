@@ -86,6 +86,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
     for (i=0; i < ntohs(dns->ans_count); i++){        
         answers[i].name=ReadName(reader, buf, &finalizar);
         reader+=finalizar;
+        printf("%s",answers[i].name);   
 
         answers[i].resource=(struct R_DATA*)(reader);
         reader=reader+sizeof(struct R_DATA);    
@@ -100,18 +101,19 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                 reader+=ntohs(answers[i].resource->data_len);
         }
         else if (ntohs(answers[i].resource->type)==T_MX) {
-           // *answers[i].rdata = *(reader+1);      
+            *answers[i].rdata = *(reader+1);      
+     
+            printf("         IN MX        %d ", *(answers[i].rdata));
 
-            answers[i].rdata=ReadName(reader, buf, &finalizar);
-            reader+=sizeof(short);
+            reader+=sizeof(short);           
             answers[i].rdata+= sizeof(short);
 
-            finalizar = 0 ;
-            
-            answers[i].rdata = ReadName(reader, buf, &finalizar);
- 
+            answers[i].rdata=ReadName(reader, buf, &finalizar);
+
             answers[i].rdata-= sizeof(short);
-          
+            
+            printf("%s \n", answers[i].rdata+sizeof(short));
+
             reader+=finalizar;
         }else if (ntohs(answers[i].resource->type)==T_NS){           
              int j;
@@ -159,9 +161,8 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                     reader+=finalizar;
                 }    
         }
-        
-    
 }
+
 imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned char *reader){
    printf("hola");
     qinfo->qtype = htons(infoConsulta.nroConsulta);
@@ -263,12 +264,9 @@ void mostrarAnswerRecords(){
             printf(" %s              IN     LOC              ",answers[i].name); 
              printf("%d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm \n", 
              resLOC.latdeg, resLOC.latmin, resLOC.latsec, resLOC.latsecfrac,
-            resLOC.northsouth, resLOC.longdeg, resLOC.longmin, resLOC.longsec, resLOC.longsecfrac, 
-            resLOC.eastwest,resLOC.altmeters, resLOC.altfrac, resLOC.sizestr, resLOC.hpstr, resLOC.vpstr);
+            resLOC.nortesur, resLOC.longdeg, resLOC.longmin, resLOC.longsec, resLOC.longsecfrac, 
+            resLOC.esteoeste,resLOC.altmeters, resLOC.altfrac, resLOC.sizestr, resLOC.hpstr, resLOC.vpstr);
          }
-
-
-    
     }
 }
 
@@ -412,96 +410,94 @@ void cambiarAFormatoDominio(char * dominio, unsigned char * dominioDns){
 
 void consulta_LOC(unsigned char *reader)
 {
-	 static char tmpbuf[255*3];
+	// static char buftemporal[255*3];
 	 register char *cp;
 	 register const u_char *rcp;
 	 int latdeg, latmin, latsec, latsecfrac;
 	 int longdeg, longmin, longsec, longsecfrac;
-	 char northsouth, eastwest;
+	 char nortesur, esteoeste;
 	 int altmeters, altfrac, altsign;
 	 const int referencealt = 100000 * 100;
-	 int32_t latval, longval, altval;
+	 int32_t latitud, longitud, altitud;
 	 u_int32_t templ;
-	 u_int8_t sizeval, hpval, vpval, versionval;
+	 u_int8_t size, horizontalpre, verticalpre, version;
 	 char *sizestr, *hpstr, *vpstr;
 	 
      rcp = reader;
 
-	 versionval = *rcp++;
-	 if (versionval) {
+	 version = *rcp++;
+	 if (version) {
 		 sprintf(cp,"; error: unknown LOC RR version");
 		 return (cp);
 	 }
 
-	 sizeval = *rcp++;
-	 hpval = *rcp++;
-	 vpval = *rcp++;
+	 size = *rcp++;
+	 horizontalpre = *rcp++;
+	 verticalpre = *rcp++;
 
 	 GETLONG(templ,rcp);
-	 latval = (templ - ((unsigned)1<<31));
+	 latitud = (templ - ((unsigned)1<<31));
 
 	 GETLONG(templ,rcp);
-	 longval = (templ - ((unsigned)1<<31));
+	 longitud = (templ - ((unsigned)1<<31));
 
 	 GETLONG(templ,rcp);
 	 if (templ < referencealt) { /* below WGS 84 spheroid */
-		 altval = referencealt - templ;
+		 altitud = referencealt - templ;
 		 altsign = -1;
 	 } else {
-        altval = templ - referencealt;
+        altitud = templ - referencealt;
         altsign = 1;
     }
-    if (latval < 0) {
-        northsouth = 'S';
-        latval = -latval;
+    if (latitud < 0) {
+        nortesur = 'S';
+        latitud = -latitud;
     }
     else
-        northsouth = 'N';
+        nortesur = 'N';
 
-    latsecfrac = latval % 1000;
-    latval = latval / 1000;
-    latsec = latval % 60;
-    latval = latval / 60;
-    latmin = latval % 60;
-    latval = latval / 60;
-    latdeg = latval;
-    if (longval < 0) {
-        eastwest = 'W';
-        longval = -longval;
+    latsecfrac = latitud % 1000;
+    latitud = latitud / 1000;
+    latsec = latitud % 60;
+    latitud = latitud / 60;
+    latmin = latitud % 60;
+    latitud = latitud / 60;
+    latdeg = latitud;
+    if (longitud < 0) {
+        esteoeste = 'W';
+        longitud = -longitud;
     }
     else
-        eastwest = 'E';
-    longsecfrac = longval % 1000;
-    longval = longval / 1000;
-    longsec = longval % 60;
-    longval = longval / 60;
-    longmin = longval % 60;
-    longval = longval / 60;
-    longdeg = longval;
-    altfrac = altval % 100;
-    altmeters = (altval / 100) * altsign;
+        esteoeste = 'E';
+    longsecfrac = longitud % 1000;
+    longitud = longitud / 1000;
+    longsec = longitud % 60;
+    longitud = longitud / 60;
+    longmin = longitud % 60;
+    longitud = longitud / 60;
+    longdeg = longitud;
+    altfrac = altitud % 100;
+    altmeters = (altitud / 100) * altsign;
 
-    sizestr = precsize_ntoa(sizeval);
-    hpstr = precsize_ntoa(hpval);
-    vpstr = precsize_ntoa(vpval);
+    sizestr = precsize_ntoa(size);
+    hpstr = precsize_ntoa(horizontalpre);
+    vpstr = precsize_ntoa(verticalpre);
 
     resLOC.latdeg = latdeg;
     resLOC.latsec = latsec;
     resLOC.latmin = latmin;
     resLOC.latsecfrac = latsecfrac;
-    resLOC.northsouth = northsouth;
+    resLOC.nortesur = nortesur;
     resLOC.longdeg = longdeg;
     resLOC.longmin = longmin;
     resLOC.longsec = longsec;
     resLOC.longsecfrac = longsecfrac;
-    resLOC.eastwest = eastwest;
+    resLOC.esteoeste = esteoeste;
     resLOC.altmeters = altmeters;
     resLOC.altfrac = altfrac;
     resLOC.sizestr = sizestr;
     resLOC.hpstr = hpstr;
     resLOC.vpstr = vpstr;
-
-
 }
 
 static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
