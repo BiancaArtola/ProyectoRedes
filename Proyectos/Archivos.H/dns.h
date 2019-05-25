@@ -86,7 +86,7 @@ struct informacionConsultaDNS {
     unsigned char* consulta;
 }infoConsulta;
 
-struct resultadoLOC{
+/*struct resultadoLOC{
  int latdeg;
  int latmin;
  int latsec;
@@ -103,7 +103,7 @@ struct resultadoLOC{
   char *sizestr;
   char* *hpstr;
   char *vpstr;
-}resLOC;
+}resLOC;*/
 
 struct resultadoSOA{
     unsigned int serial;
