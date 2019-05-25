@@ -10,19 +10,9 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
-//#include "loc_ntoa.h"
 
 //Servidor DNS
 char servidorDNS[10];
-
-
-//Tipos de registros
-#define T_A 1 
-#define T_MX 15 
-#define T_LOC 29
-#define T_NS 2
-#define T_SOA 6
-
 
 //Valor de clase --> solo usamos internet (IN)
 #define VALOR_CLASS_IN 1

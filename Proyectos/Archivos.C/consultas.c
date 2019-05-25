@@ -26,7 +26,7 @@ void setPuerto();
 void setTipoConsulta();
 void setTipoResolucionConsulta();
 void setConsulta(char* consulta);
-void evaluarIngreso(char* argv[], int argc); 
+void evaluarIngreso(char* argv[], int argc);
 
 int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 	//Retorna 0 si el servidor fue asignado. 1 en caso contrario.

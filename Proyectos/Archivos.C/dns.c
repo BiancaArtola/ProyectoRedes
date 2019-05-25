@@ -20,7 +20,7 @@ void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int
 void readTipoRecurso(struct RES_RECORD record[20], int i,unsigned char *reader,  unsigned char buf[65536], int finalizar);
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador);
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
-static const char *precsize_ntoa(u_int8_t  prec);
+static char *precsize_ntoa(u_int8_t  prec);
 
 
 /*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
@@ -63,22 +63,16 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
   //  asignarStruct(parametros, infoConsulta);
   
     asignarInformacion(parametros);
-       dest.sin_port = infoConsulta.puerto;  
+    dest.sin_port = infoConsulta.puerto;  
     asignarServidorDNS(infoConsulta.servidor);
      
-  
     buscarIPporNombre(infoConsulta.consulta);
-   /*if (infoConsulta.nroResolucionConsulta == 1){
-        infoConsulta.nroConsulta = T_NS;
+   if (infoConsulta.nroResolucionConsulta == 0){
+        infoConsulta.nroConsulta = ns_t_ns ;
        // descomponer();
-     //  char* mierda = "google.com";
-  // infoConsulta.consulta = mierda;
-        buscarIPporNombre(infoConsulta.consulta);
-     }*/
+     }
     return 0;
 }
-
-
 
 void leerRegistros(unsigned char buf[65536], unsigned char *reader){
     int finalizar=0;
@@ -93,7 +87,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
         reader=reader+sizeof(struct R_DATA);    
         answers[i].rdata= (unsigned char*)malloc(ntohs(answers[i].resource->data_len));
 
-        if(ntohs(answers[i].resource->type)==T_A) {
+        if(ntohs(answers[i].resource->type)==ns_t_a) {
             int j;
             for(j=0;j<ntohs(answers[i].resource->data_len);j++)
                 answers[i].rdata[j]=reader[j];            
@@ -101,7 +95,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
             answers[i].rdata[ntohs(answers[i].resource->data_len)]='\0';
                 reader+=ntohs(answers[i].resource->data_len);
         }
-        else if (ntohs(answers[i].resource->type)==T_MX) {
+        else if (ntohs(answers[i].resource->type)==ns_t_mx ) {
             *answers[i].rdata = *(reader+1);      
      
             printf("         IN MX        %d ", *(answers[i].rdata));
@@ -116,12 +110,13 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
             printf("%s \n", answers[i].rdata+sizeof(short));
 
             reader+=finalizar;
-        }else if (ntohs(answers[i].resource->type)==T_NS){           
+        }else if (ntohs(answers[i].resource->type)==ns_t_ns ){           
              int j;
              answers[i].rdata = ReadName(reader, buf, &finalizar);   
-             reader+=finalizar;         
+             reader+=finalizar;     
+             printf("     IN    NS    %s \n", answers[i].rdata);    
         }
-        else if (ntohs(answers[i].resource->type)==T_LOC)
+        else if (ntohs(answers[i].resource->type)==ns_t_loc )
         {
             consulta_LOC(reader);
         }
@@ -133,14 +128,14 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
 
                 reader+=finalizar;
 
-                printf("%s \n", auth[i].name);
+                printf("%s ", auth[i].name);
 
                 auth[i].resource=(struct R_DATA*)(reader);
                 reader=reader+sizeof(struct R_DATA);      
 
               //  auth[i].rdata= (unsigned char*)malloc(ntohs(auth[i].resource->data_len));
 
-                if (ntohs(auth[i].resource->type)==T_SOA)
+                if (ntohs(auth[i].resource->type)==ns_t_soa )
                 {
                     printf("       IN     SOA             ");
 
@@ -170,7 +165,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
 
                 addit[i].rdata= (unsigned char*)malloc(ntohs(addit[i].resource->data_len));
 
-                if(ntohs(addit[i].resource->type)==T_A) {
+                if(ntohs(addit[i].resource->type)==ns_t_a) {
                     int j;
                     for(j=0;j<ntohs(addit[i].resource->data_len);j++){
                         addit[i].rdata[j]=reader[j];
@@ -178,7 +173,7 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                     addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
                     reader+=ntohs(addit[i].resource->data_len);
                     }
-                else if (ntohs(addit[i].resource->type)==T_MX) {
+                else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
                     // *addit[i].rdata = *(reader+1);
                     finalizar = 0 ;
                     addit[i].rdata = ReadName(reader, buf, &finalizar);
@@ -214,10 +209,8 @@ void buscarIPporNombre(unsigned char *host){
     //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
     qname =(unsigned char*)&buf[tamanioMensajeSocket];
-    //if (infoConsulta.nroConsulta==T_LOC)
-   //     cambiarAFormatoDominio("SW1A2AA.find.me.uk", qname);
-   // else
-         cambiarAFormatoDNS(qname, host);
+  
+    cambiarAFormatoDNS(qname, host);
 
     
     //Informacion de consulta
@@ -267,23 +260,23 @@ void mostrarAnswerRecords(){
     if (ntohs(dns->ans_count)>0)
         printf("\n\n;; ANSWERS SECTION\n");
     for(i=0 ; i < ntohs(dns->ans_count) ; i++){
-        if ( ntohs(answers[i].resource->type) == T_A) {
+        if ( ntohs(answers[i].resource->type) == ns_t_a) {
             long *p;
             p=(long*)answers[i].rdata;
             a.sin_addr.s_addr=(*p);
             printf(" %s              IN     A              ",answers[i].name);        
-            printf("%s \n\n", inet_ntoa(a.sin_addr));
+            printf("%s \n", inet_ntoa(a.sin_addr));
         }
-        /*else if ( ntohs(answers[i].resource->type) == T_MX) {   
+        /*else if ( ntohs(answers[i].resource->type) == ns_t_mx ) {   
             printf(" %s             IN     MX              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata+sizeof(short));
         }*/
 
-          else if ( ntohs(answers[i].resource->type) == T_NS) {   
+         /* else if ( ntohs(answers[i].resource->type) == ns_t_ns ) {   
             printf(" %s              IN     NS              ",answers[i].name);        
             printf(" %s \n", answers[i].rdata);
-        }
-         else if ( ntohs(answers[i].resource->type) == T_LOC)
+        }*/
+         else if ( ntohs(answers[i].resource->type) == ns_t_loc )
          {
             printf(" %s              IN     LOC              ",answers[i].name); 
              printf("%d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm \n", 
@@ -296,18 +289,6 @@ void mostrarAnswerRecords(){
 
 void mostrarAutoritiveRecords(){
 	int i;
-    //if (ntohs(dns->auth_count)>0)
-   /*     printf("\n\n;; AUTHORITIVE SECTION:\n");
-    for( i=0 ; i < ntohs(dns->auth_count) ; i++) {
-        printf("-Nombre : %s \n",auth[i].name);
-        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-        printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-        
-            printf("-Nombre servidor: %s \n\n",auth[i].rdata);
-            printf(" %s          5    IN     LOC             ",auth[i].name);        
-           // printf(" %s \n",auth[i].rdata);
-        printf("\n");
-    }*/
 }
 
 void mostrarAdditionalRecords(){
@@ -348,7 +329,6 @@ void asignarPropiedadesDNS(){
     dns->auth_count = 0;
     dns->add_count = 0;
 }
-
 
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador){ 
     *contador = 1;
@@ -408,34 +388,9 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador){
         }         
     *dns++='\0'; 
     }
-void cambiarAFormatoDominio(char * dominio, unsigned char * dominioDns){
-	int largoDelDominio = strlen(dominio);
-	char * part = dominio;
-	int contador = 0;
-	int i;
-	for(i = 0;i <= largoDelDominio ; i++){
-		if(*dominio == '.' || i == largoDelDominio){
-			int j;
-			*dominioDns++ = contador + 0;
-			for(j = 0;j<contador;j++){
-				*dominioDns++ = *part++;
-			}
-			part++;
-			contador = 0;
-		}
-		else {
-			contador++;	
-		}
-		dominio++;
-	}
-	*dominioDns++ = 0;
-	*dominioDns = '\0';
-}
 
 void consulta_LOC(unsigned char *reader)
 {
-	// static char buftemporal[255*3];
-	 register char *cp;
 	 register const u_char *rcp;
 	 int latdeg, latmin, latsec, latsecfrac;
 	 int longdeg, longmin, longsec, longsecfrac;
@@ -451,8 +406,7 @@ void consulta_LOC(unsigned char *reader)
 
 	 version = *rcp++;
 	 if (version) {
-		 sprintf(cp,"; error: unknown LOC RR version");
-		 return (cp);
+		 printf("ERROR");
 	 }
 
 	 size = *rcp++;
@@ -527,7 +481,7 @@ void consulta_LOC(unsigned char *reader)
 static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
  1000000,10000000,100000000,1000000000};
 
-static const char *precsize_ntoa(u_int8_t  prec)
+static char *precsize_ntoa(u_int8_t  prec)
 {
     static char retbuf[sizeof("90000000.00")];
     unsigned long val;
