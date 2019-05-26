@@ -1,1 +1,1 @@
-gcc -o dns dns.c dnsquery.c ayuda.c consultas.c manejoDNS.c consultaLOC.c socket.c
+gcc -o dns dns.c dnsquery.c ayuda.c consultas.c DNS-service.c consultaLOC.c socket.c 
