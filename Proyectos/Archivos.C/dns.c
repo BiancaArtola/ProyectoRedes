@@ -1,5 +1,6 @@
 #include "../Archivos.H/dns.h"
 #include "../Archivos.H/dnsPropiedades.h"
+#include "../Archivos.H/consultaLOC.h"
 
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
@@ -17,8 +18,8 @@ void mostrarRespuestas();
 void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar);
 void readTipoRecurso(struct RES_RECORD record[20], int i,unsigned char *reader,  unsigned char buf[65536], int finalizar);
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador);
-static char *precsize_ntoa(u_int8_t  prec);
-void consulta_LOC(unsigned char*);
+//static char *precsize_ntoa(u_int8_t  prec);
+//void consulta_LOC(unsigned char*);
 
 /*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
  * Si el usuario ya asigno un servidor, se setea ese servidor
@@ -383,11 +384,10 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador){
         }         
     *dns++='\0'; 
 }
-
-void consulta_LOC(unsigned char *reader)
-{
+/*
+void consulta_LOC(unsigned char *reader){
 	unsigned char *rcp;
-	 int latdeg, latmin, latsec, latsecfrac;
+	int latdeg, latmin, latsec, latsecfrac;
 	 int longdeg, longmin, longsec, longsecfrac;
 	 char nortesur, esteoeste;
 	 int altmeters, altfrac, altsign;
@@ -398,10 +398,9 @@ void consulta_LOC(unsigned char *reader)
 	 char *sizestr, *hpstr, *vpstr;
 	 
      rcp = reader;
-
 	 version = *rcp++;
 	 if (version) {
-		 printf("ERROR");
+		 printf("Ocurrio un error.");
 	 }
 
 	 size = *rcp++;
@@ -415,7 +414,7 @@ void consulta_LOC(unsigned char *reader)
 	 longitud = (templ - ((unsigned)1<<31));
 
 	 GETLONG(templ,rcp);
-	 if (templ < referencealt) { /* below WGS 84 spheroid */
+	 if (templ < referencealt) {
 		 altitud = referencealt - templ;
 		 altsign = -1;
 	 } else {
@@ -426,9 +425,8 @@ void consulta_LOC(unsigned char *reader)
         nortesur = 'S';
         latitud = -latitud;
     }
-    else{
+    else
         nortesur = 'N';
-    }
 
     latsecfrac = latitud % 1000;
     latitud = latitud / 1000;
@@ -442,9 +440,9 @@ void consulta_LOC(unsigned char *reader)
         esteoeste = 'W';
         longitud = -longitud;
     }
-    else{
+    else
         esteoeste = 'E';
-    }
+
     longsecfrac = longitud % 1000;
     longitud = longitud / 1000;
     longsec = longitud % 60;
@@ -475,7 +473,7 @@ void consulta_LOC(unsigned char *reader)
     resLOC.hpstr = hpstr;
     resLOC.vpstr = vpstr;*/
 
-    printf("           IN     LOC     %d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm \n", 
+/*    printf("           IN     LOC     %d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm \n", 
             latdeg, latmin, latsec, latsecfrac, nortesur, longdeg, longmin, longsec, longsecfrac, 
             esteoeste,altmeters, altfrac, sizestr, hpstr, vpstr);
 }
@@ -493,9 +491,8 @@ static char *precsize_ntoa(u_int8_t  prec)
     (void) sprintf(retbuf,"%d.%.2d", val/100, val%100);
     return (retbuf);
 }
-
-void consultaIterativa(unsigned char *host, int qtype)
-{
+*/
+void consultaIterativa(unsigned char *host, int qtype){
     unsigned char primeraLlamada[100];
     strcpy(primeraLlamada, ".");
     infoConsulta.nroConsulta=ns_t_ns;
