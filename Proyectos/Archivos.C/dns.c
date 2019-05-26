@@ -46,7 +46,6 @@ void asignarServidorDNS(char* servidor){
 	else
 		strcpy(servidorDNS, servidor);
     infoConsulta.servidor = servidorDNS;
-    
 }
 
 void asignarInformacion(struct informacionConsultaDNS parametros){
@@ -67,7 +66,7 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
    // buscarIPporNombre(infoConsulta.consulta);
    if (infoConsulta.nroResolucionConsulta == 0){
        //Seteo el primer servidor para que sea el raiz
-       infoConsulta.servidor="202.12.27.33";
+       //infoConsulta.servidor="202.12.27.33";
         consultaIterativa(infoConsulta.consulta,infoConsulta.nroConsulta );
        // descomponer();
      }
@@ -207,11 +206,11 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
         }
 }
 
-imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned char *reader){
+/*imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned char *reader){
    printf("hola");
     qinfo->qtype = htons(infoConsulta.nroConsulta);
     leerRegistros(buf, reader);
-}
+}*/
 
 void buscarIPporNombre(unsigned char* host){	
     unsigned char buf[65536],*qname,*reader;
@@ -519,8 +518,10 @@ static char *precsize_ntoa(u_int8_t  prec)
 
 void consultaIterativa(unsigned char *host, int qtype)
 {
+    unsigned char primeraLlamada[100];
+    strcpy(primeraLlamada, ".");
     infoConsulta.nroConsulta=ns_t_ns;
-    buscarIPporNombre(host);
+    buscarIPporNombre(primeraLlamada);
     dns->ans_count = 0;
     while (ntohs(dns->ans_count) == 0)
     {
