@@ -147,11 +147,11 @@ void setPuerto(){
 
 void setTipoConsulta(){
 	if (strcmp(tipoConsulta, "-a") == 0)
-		parametros.nroConsulta = T_A;
+		parametros.nroConsulta = ns_t_a;
 	else if (strcmp(tipoConsulta, "-mx") == 0)
-		parametros.nroConsulta = T_MX;
+		parametros.nroConsulta = ns_t_mx;
 	else
-		parametros.nroConsulta = T_LOC;	
+		parametros.nroConsulta = ns_t_loc;	
 }
 
 void setTipoResolucionConsulta(){
