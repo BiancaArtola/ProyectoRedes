@@ -47,12 +47,12 @@ int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 int buscarPuerto(char* parametroServidor){
 	int posicionComienzoPuerto=0;
 	int cantCaracteres = strlen(parametroServidor);
-	int encontreCorchete = 0;
+	int encontrePuerto = 0;
 	int i = 0;
-	for (i = 0 ; i < cantCaracteres && encontreCorchete ==0; i++){
-		if (parametroServidor[i] == '[' && parametroServidor[i+1]==':') {
-			encontreCorchete = 1;
-			posicionComienzoPuerto = i;
+	for (i = 0 ; i < cantCaracteres && encontrePuerto ==0; i++){
+		if (parametroServidor[i] == ':' ) {
+			encontrePuerto = 1;
+			posicionComienzoPuerto = i+1;
 		}
 	}
 	return posicionComienzoPuerto;
@@ -64,11 +64,11 @@ void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuer
 
 	//El puerto comienza donde termina el servidor --> se le quitan dos por '[:'
 	int longitudServidor = posicionComienzoPuerto;
-	parametros.puerto = parametroServidor+posicionComienzoPuerto+2;
+	parametros.puerto = parametroServidor+posicionComienzoPuerto;
 
 	//Asigno en parametros.servidor el valor correspondiente ingresado por el usuario
 	//Como el primer caracter ingresado es @, hacemos el +1
-	strncpy(parametros.servidor, parametroServidor, posicionComienzoPuerto);
+	strncpy(parametros.servidor, parametroServidor, posicionComienzoPuerto-1);
 	parametros.servidor = parametros.servidor+1;
 }
 
@@ -112,9 +112,11 @@ int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int 
 						tipoResolucionConsulta = parametrosFinales[i];
 					else
 						return 0; //Hubo un error
-				}
-				else
-					return 0; //No ingreso ningun tipo de parametro valido.
+		}
+		else{
+			mensajeAyuda(); //No ingreso ningun tipo de parametro valido.
+			return 0;
+		}
 	}
 	asignarTipoConsultaPorDefecto();
 	return 1; //Salida exitosa
@@ -134,15 +136,15 @@ int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], i
 		return 1;
 	}
 	else
-		return 0;
+		mensajeAyuda();
 }
 
 void setPuerto(){
 	int puertoAuxiliar = atoi(parametros.puerto);
 	if (puertoAuxiliar == 0)
-		parametros.puerto = htons(PUERTO_DEFECTO); 
+		parametros.puerto = (char*)(intptr_t) htons(PUERTO_DEFECTO); 
 	else
-		parametros.puerto = htons(puertoAuxiliar); 
+		parametros.puerto = (char*)(intptr_t) htons(puertoAuxiliar); 
 }
 
 void setTipoConsulta(){
@@ -173,9 +175,7 @@ void evaluarIngreso(char* argv[], int argc){
 			int servidorAsignado = buscarServidorYPuerto(argv, argc);
 			int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
 
-			if (hayParametrosAsignados == 0)
-				printf("Los parametros ingresados son INCORRECTOS. Por favor chequee su entrada. \n");
-			else {
+			if (hayParametrosAsignados != 0){			
 				setPuerto();				
 				setTipoConsulta();
 				setTipoResolucionConsulta();		
