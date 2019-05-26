@@ -10,7 +10,6 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
-
 //Servidor DNS
 char servidorDNS[10];
 
@@ -25,6 +24,7 @@ char servidorDNS[10];
 #define PUERTO_DEFECTO 53
 
 //Estructura del header de DNS
+/*
 struct DNS_HEADER{
     unsigned short id; // identification number
     
@@ -45,7 +45,7 @@ struct DNS_HEADER{
     unsigned short ans_count; // number of answer entries
     unsigned short auth_count; // number of authority entries
     unsigned short add_count; // number of resource entries
-};
+};*/
 
 //Constant sized fields of query structure
 struct QUESTION

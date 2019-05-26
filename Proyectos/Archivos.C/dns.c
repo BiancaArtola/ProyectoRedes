@@ -1,5 +1,5 @@
 #include "../Archivos.H/dns.h"
-//#include "../Archivos.H/asignacionConsulta.h"
+#include "../Archivos.H/dnsPropiedades.h"
 
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
@@ -14,7 +14,6 @@ void buscarIPporNombre(unsigned char *host);
 void consultaIterativa(unsigned char *host, int qtype);
 void mostrarContenidoRespuesta();
 void mostrarRespuestas();
-void asignarPropiedadesDNS();
 void readGeneral(int i, struct RES_RECORD record[20], unsigned char *reader, int finalizar);
 void readTipoRecurso(struct RES_RECORD record[20], int i,unsigned char *reader,  unsigned char buf[65536], int finalizar);
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador);
@@ -57,8 +56,8 @@ void asignarInformacion(struct informacionConsultaDNS parametros){
 }
 
 int iniciarDNS(struct informacionConsultaDNS parametros){
-  //  asignarStruct(parametros, infoConsulta);
-  
+    //asignarStruct(parametros, infoConsulta);
+
     asignarInformacion(parametros);
     dest.sin_port = (int) infoConsulta.puerto;  
     asignarServidorDNS(infoConsulta.servidor);
@@ -67,7 +66,7 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
    if (infoConsulta.nroResolucionConsulta == 0){
        //Seteo el primer servidor para que sea el raiz
        //infoConsulta.servidor="202.12.27.33";
-        consultaIterativa(infoConsulta.consulta,infoConsulta.nroConsulta );
+        consultaIterativa(infoConsulta.consulta, infoConsulta.nroConsulta );
        // descomponer();
      }
     else{
@@ -128,7 +127,6 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
         }
     }
         printf("\n\n;; AUTHORITIVE SECTION:\n");
-        //read authorities PROBE ESTO CON MX Y TAMBIEN TIRO ADITIONAL 
         for(i=0;i<ntohs(dns->auth_count);i++)
         {
                 auth[i].name=ReadName(reader,buf,&finalizar);
@@ -218,8 +216,7 @@ void buscarIPporNombre(unsigned char* host){
 	int tamanioMensajeSocket=0;       
     struct QUESTION *qinfo = NULL;
 
-    printf("Evaluando la consulta: %s \n\n" , host);
-	
+    printf("Evaluando la consulta: %s \n\n" , host);	
 
 	//Se importa con la libreria netinet
     dest.sin_family = AF_INET; //Familia de la direccion
@@ -228,7 +225,7 @@ void buscarIPporNombre(unsigned char* host){
 	dns = NULL;	
     //Asigna la estructura DNS para queries estandar
     dns = (struct DNS_HEADER *)&buf;
-	asignarPropiedadesDNS();    
+	asignarPropiedadesDNS(dns);    
 
     //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
@@ -257,7 +254,7 @@ void buscarIPporNombre(unsigned char* host){
 
     dns = (struct DNS_HEADER*) buf;
     
-    mostrarContenidoRespuesta(dns);
+    mostrarContenidoRespuesta();
     
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  //mueve el puntero	
@@ -326,25 +323,6 @@ void mostrarRespuestas(){
 	//mostrarAnswerRecords();
     //mostrarAutoritiveRecords();
     //mostrarAdditionalRecords();     
-}
-
-void asignarPropiedadesDNS(){
-	dns->id = (unsigned short) htons(getpid());
-    dns->qr = 0; //This is a query
-    dns->opcode = 0; //This is a standard query
-    dns->aa = 0; //Not Authoritative
-    dns->tc = 0; //This message is not truncated
-    //dns->rd = infoConsulta.nroResolucionConsulta; //Indicara si la consulta es recursiva o iterativa
-    dns->rd=1;
-    dns->ra = 0; //Recursion not available! hey we dont have it (lol)
-    dns->z = 0;
-    dns->ad = 0;
-    dns->cd = 0;
-    dns->rcode = 0;
-    dns->q_count = htons(1); //we have only 1 question
-    dns->ans_count= 0;
-    dns->auth_count = 0;
-    dns->add_count = 0;
 }
 
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador){ 

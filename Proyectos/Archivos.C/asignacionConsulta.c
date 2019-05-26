@@ -1,4 +1,6 @@
 #include "../Archivos.H/asignacionConsulta.h"
+#include <stdio.h>
+
 /*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
  * Si el usuario ya asigno un servidor, se setea ese servidor
  * */
@@ -32,13 +34,9 @@ void asignarInformacion(struct informacionConsultaDNS parametros, struct informa
     infoConsulta.nroResolucionConsulta = parametros.nroResolucionConsulta;
     infoConsulta.consulta = parametros.consulta;
 }
-
-void asignarStruct(struct informacionConsultaDNS parametros, struct informacionConsultaDNS infoConsulta){
+ void asignarStruct(struct informacionConsultaDNS parametros, struct informacionConsultaDNS infoConsulta){
     asignarInformacion(parametros, infoConsulta);
     
     asignarServidorDNS(infoConsulta.servidor, infoConsulta);
-   
-    
-    //buscarIPporNombre(infoConsulta.consulta);
 
 }
