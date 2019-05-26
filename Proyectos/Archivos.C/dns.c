@@ -11,6 +11,7 @@ void asignarInformacion(struct informacionConsultaDNS parametros);
 void asignarServidorDNS(char* servidor);
 void cambiarAFormatoDNS(unsigned char*,unsigned char*);
 void buscarIPporNombre(unsigned char *host);
+void consultaIterativa(unsigned char *host, int qtype);
 void mostrarContenidoRespuesta();
 void mostrarRespuestas();
 void asignarPropiedadesDNS();
@@ -19,7 +20,6 @@ void readTipoRecurso(struct RES_RECORD record[20], int i,unsigned char *reader, 
 u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador);
 static char *precsize_ntoa(u_int8_t  prec);
 void consulta_LOC(unsigned char*);
-
 
 /*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
  * Si el usuario ya asigno un servidor, se setea ese servidor
@@ -46,7 +46,6 @@ void asignarServidorDNS(char* servidor){
 	else
 		strcpy(servidorDNS, servidor);
     infoConsulta.servidor = servidorDNS;
-    
 }
 
 void asignarInformacion(struct informacionConsultaDNS parametros){
@@ -61,15 +60,19 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
   //  asignarStruct(parametros, infoConsulta);
   
     asignarInformacion(parametros);
-    dest.sin_port = infoConsulta.puerto;  
+    dest.sin_port = (int) infoConsulta.puerto;  
     asignarServidorDNS(infoConsulta.servidor);
      
    // buscarIPporNombre(infoConsulta.consulta);
    if (infoConsulta.nroResolucionConsulta == 0){
-        infoConsulta.nroConsulta = ns_t_ns ;
+       //Seteo el primer servidor para que sea el raiz
+       //infoConsulta.servidor="202.12.27.33";
+        consultaIterativa(infoConsulta.consulta,infoConsulta.nroConsulta );
        // descomponer();
      }
+    else{
       buscarIPporNombre(infoConsulta.consulta);
+     }
     return 0;
 }
 
@@ -115,7 +118,6 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
 
             reader+=finalizar;
         }else if (ntohs(answers[i].resource->type)==ns_t_ns ){           
-             int j;
              answers[i].rdata = ReadName(reader, buf, &finalizar);   
              reader+=finalizar;     
              printf("     IN    NS    %s \n", answers[i].rdata);    
@@ -159,6 +161,12 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
 
                     auth[i].rdata+=sizeof(struct resultadoSOA);
                 } 
+                else if (ntohs(auth[i].resource->type)==ns_t_ns )
+                    {
+                        answers[i].rdata = ReadName(reader, buf, &finalizar);   
+                        reader+=finalizar;     
+                        printf("     IN    NS    %s \n", answers[i].rdata);  
+                    }
         }                            
         //read additional
         printf("\n\n;; ADDITIONAL SECTION\n");
@@ -182,24 +190,27 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
                     addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
                     reader+=ntohs(addit[i].resource->data_len);
 
-                     long *p;
+                    long *p;
                     p=(long*)addit[i].rdata;
                     a.sin_addr.s_addr=(*p);
    
                     printf("%s  ",addit[i].name);  
                     printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
+
+                    asignarServidorDNS(inet_ntoa(a.sin_addr));
                 }
+                //Si es IPv6 lo salteo
                 else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
                     reader+=ntohs(addit[i].resource->data_len);
                 }    
         }
 }
 
-imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned char *reader){
+/*imprimirRegistrosNS(struct QUESTION *qinfo,  unsigned char buf[65536],unsigned char *reader){
    printf("hola");
     qinfo->qtype = htons(infoConsulta.nroConsulta);
     leerRegistros(buf, reader);
-}
+}*/
 
 void buscarIPporNombre(unsigned char* host){	
     unsigned char buf[65536],*qname,*reader;
@@ -323,7 +334,8 @@ void asignarPropiedadesDNS(){
     dns->opcode = 0; //This is a standard query
     dns->aa = 0; //Not Authoritative
     dns->tc = 0; //This message is not truncated
-    dns->rd = infoConsulta.nroResolucionConsulta; //Indicara si la consulta es recursiva o iterativa
+    //dns->rd = infoConsulta.nroResolucionConsulta; //Indicara si la consulta es recursiva o iterativa
+    dns->rd=1;
     dns->ra = 0; //Recursion not available! hey we dont have it (lol)
     dns->z = 0;
     dns->ad = 0;
@@ -490,11 +502,10 @@ void consulta_LOC(unsigned char *reader)
             esteoeste,altmeters, altfrac, sizestr, hpstr, vpstr);
 }
 
-static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
- 1000000,10000000,100000000,1000000000};
-
 static char *precsize_ntoa(u_int8_t  prec)
 {
+    static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
+    1000000,10000000,100000000,1000000000};
     static char retbuf[sizeof("90000000.00")];
     unsigned long val;
     int mantissa, exponent;
@@ -505,3 +516,16 @@ static char *precsize_ntoa(u_int8_t  prec)
     return (retbuf);
 }
 
+void consultaIterativa(unsigned char *host, int qtype)
+{
+    unsigned char primeraLlamada[100];
+    strcpy(primeraLlamada, ".");
+    infoConsulta.nroConsulta=ns_t_ns;
+    buscarIPporNombre(primeraLlamada);
+    dns->ans_count = 0;
+    while (ntohs(dns->ans_count) == 0)
+    {
+        infoConsulta.nroConsulta=qtype;
+        buscarIPporNombre(host);
+    }
+}
