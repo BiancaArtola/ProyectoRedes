@@ -1,4 +1,4 @@
-#include "../Archivos.H/dnsPropiedades.h"
+#include "../Archivos.H/manejoDNS.h"
 void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
 	dns->id = (unsigned short) htons(getpid());
     dns->qr = 0; //This is a query
@@ -16,4 +16,23 @@ void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
     dns->ans_count= 0;
     dns->auth_count = 0;
     dns->add_count = 0;
+}
+
+
+/*
+ * Convierte la consulta ingresada por el usuario a una consulta DNS
+ * */
+ void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host){ 
+    int lock = 0 ;     
+    strcat((char*)host,"."); 	 	
+    int i;     
+    for(i = 0 ; i < strlen((char*)host) ; i++)         
+        if(host[i]=='.') 
+        {             
+            *dns++ = i-lock;             
+            for(;lock<i;lock++)                             
+            *dns++=host[lock];             
+            lock++;         
+        }         
+    *dns++='\0'; 
 }

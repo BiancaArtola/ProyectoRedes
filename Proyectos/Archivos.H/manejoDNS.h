@@ -33,4 +33,5 @@ struct DNS_HEADER{
     unsigned short auth_count; // number of authority entries
     unsigned short add_count; // number of resource entries
 };
+ void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
 void asignarPropiedadesDNS(struct DNS_HEADER *dns);

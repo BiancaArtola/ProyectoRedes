@@ -1,6 +1,7 @@
 #include "../Archivos.H/dns.h"
-#include "../Archivos.H/dnsPropiedades.h"
+#include "../Archivos.H/manejoDNS.h"
 #include "../Archivos.H/consultaLOC.h"
+#include "../Archivos.H/socket.h"
 
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
@@ -10,7 +11,6 @@ struct RES_RECORD answers[20],auth[20],addit[20];
 
 void asignarInformacion(struct informacionConsultaDNS parametros);
 void asignarServidorDNS(char* servidor);
-void cambiarAFormatoDNS(unsigned char*,unsigned char*);
 void buscarIPporNombre(unsigned char *host);
 void consultaIterativa(unsigned char *host, int qtype);
 void mostrarContenidoRespuesta();
@@ -36,7 +36,6 @@ void asignarServidorDNS(char* servidor){
 			if(strncmp(line , "nameserver" , 10) == 0){
 				p = strtok(line , " ");
 				p = strtok(NULL , " ");
-				//agarra el ip que esta en ese archivo, queda en p
 			}
 		}
 		strcpy(servidorDNS, p);
@@ -208,6 +207,21 @@ void leerRegistros(unsigned char buf[65536], unsigned char *reader){
     qinfo->qtype = htons(infoConsulta.nroConsulta);
     leerRegistros(buf, reader);
 }*/
+/*
+int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket){
+    int socketDNS;
+    socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	tamanioMensajeSocket+=sizeof(struct QUESTION);
+	int tamanioDest = sizeof(dest);
+    if (sendto(socketDNS, (char*)buf, tamanioMensajeSocket, 0, (struct sockaddr*)&dest, tamanioDest) < 0){
+        perror("Error en el servidor");
+    }	
+
+    if (recvfrom(socketDNS, (char*)buf, 65536, 0, (struct sockaddr*)&dest, (socklen_t*)&tamanioDest ) < 0) {
+        perror("recvfrom failed");
+    }
+    return tamanioDest;
+}*/
 
 void buscarIPporNombre(unsigned char* host){	
     unsigned char buf[65536],*qname,*reader;
@@ -238,19 +252,8 @@ void buscarIPporNombre(unsigned char* host){
     qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
     qinfo->qclass = htons(VALOR_CLASS_IN); 
 
-
-    int socketDNS;
-    socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	tamanioMensajeSocket+=sizeof(struct QUESTION);
-	int tamanioDest = sizeof(dest);
-    if (sendto(socketDNS, (char*)buf, tamanioMensajeSocket, 0, (struct sockaddr*)&dest, tamanioDest) < 0){
-        perror("Error en el servidor");
-    }	
-
-    if (recvfrom(socketDNS, (char*)buf, 65536, 0, (struct sockaddr*)&dest, (socklen_t*)&tamanioDest ) < 0) {
-        perror("recvfrom failed");
-    }
-
+    int tamanioDest = crearSocket(buf, tamanioMensajeSocket, dest);
+ 
     dns = (struct DNS_HEADER*) buf;
     
     mostrarContenidoRespuesta();
@@ -365,23 +368,6 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer, int* contador){
     return name;    
 }
 
-/*
- * Convierte la consulta ingresada por el usuario a una consulta DNS
- * */
- void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host){ 
-    int lock = 0 ;     
-    strcat((char*)host,"."); 	 	
-    int i;     
-    for(i = 0 ; i < strlen((char*)host) ; i++)         
-        if(host[i]=='.') 
-        {             
-            *dns++ = i-lock;             
-            for(;lock<i;lock++)                             
-            *dns++=host[lock];             
-            lock++;         
-        }         
-    *dns++='\0'; 
-}
 
 void consultaIterativa(unsigned char *host, int qtype){
     unsigned char primeraLlamada[100];
