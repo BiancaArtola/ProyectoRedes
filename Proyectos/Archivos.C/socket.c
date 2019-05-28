@@ -1,7 +1,5 @@
 #include "../Archivos.H/socket.h"
 
-
-
 int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sockaddr_in dest){
     int socketDNS;
     socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -10,7 +8,7 @@ int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sock
 
     /*TIMEOUT SETTINGS*/
     
-    timeout.tv_sec = 10;           /*set the timeout to 10 seconds*/
+    timeout.tv_sec = 30;           
     timeout.tv_usec = 0;
         
     if (setsockopt(socketDNS, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) < 0) {
@@ -31,8 +29,7 @@ int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sock
         perror("Ocurrio un error");
         return -1;
     }
-  
-    
+     
     
     return tamanioDest;
 }

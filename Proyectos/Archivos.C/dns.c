@@ -11,6 +11,7 @@ struct sockaddr_in a;
 struct RES_RECORD answers[20],auth[20],addit[20]; 
 unsigned char buf[65536];
 unsigned char *reader;
+int corte =0;
 
 void asignarInformacion(struct informacionConsultaDNS parametros);
 void asignarServidorDNS(char* servidor);
@@ -110,32 +111,33 @@ void mostrarAnswers(int i, int finalizar){
         }
 }
 
-mostrarAuthoritive(int i, int finalizar){
+int mostrarAuthoritive(int i, int finalizar){
      if (ntohs(auth[i].resource->type)==ns_t_soa )
-                {
-                    printf("       IN     SOA             ");
+    {
+        printf("       IN     SOA             ");
 
-                    auth[i].rdata=leerFormatoDNS(reader,buf,&finalizar);
-                    reader+=finalizar;
-                    printf("%s  ",  auth[i].rdata);
+        auth[i].rdata=leerFormatoDNS(reader,buf,&finalizar);
+        reader+=finalizar;
+        printf("%s  ",  auth[i].rdata);
 
-                    auth[i].rdata=leerFormatoDNS(reader,buf,&finalizar);
-                    reader+=finalizar;
-                    printf("%s  ",  auth[i].rdata);
+        auth[i].rdata=leerFormatoDNS(reader,buf,&finalizar);
+        reader+=finalizar;
+        printf("%s  ",  auth[i].rdata);
 
-                    struct resultadoSOA *resSOA=(struct resultadoSOA*) reader;
+        struct resultadoSOA *resSOA=(struct resultadoSOA*) reader;
 
-                    printf("%d  %d  %d  %d  %d \n", ntohl(resSOA->serial), ntohl(resSOA->refresh), ntohl(resSOA->retry),
-                    ntohl(resSOA->expire), ntohl(resSOA->minimum));
+        printf("%d  %d  %d  %d  %d \n", ntohl(resSOA->serial), ntohl(resSOA->refresh), ntohl(resSOA->retry),
+        ntohl(resSOA->expire), ntohl(resSOA->minimum));
 
-                    auth[i].rdata+=sizeof(struct resultadoSOA);
-                } 
-                else if (ntohs(auth[i].resource->type)==ns_t_ns )
-                    {
-                        answers[i].rdata = leerFormatoDNS(reader, buf, &finalizar);   
-                        reader+=finalizar;     
-                        printf("     IN    NS    %s \n", answers[i].rdata);  
-                    }
+        auth[i].rdata+=sizeof(struct resultadoSOA);
+        corte=-1;
+    } 
+    else if (ntohs(auth[i].resource->type)==ns_t_ns )
+        {
+            answers[i].rdata = leerFormatoDNS(reader, buf, &finalizar);   
+            reader+=finalizar;     
+            printf("     IN    NS    %s \n", answers[i].rdata);  
+        }
 }
 
 mostrarAdditional(int i, int finalizar){
@@ -150,11 +152,12 @@ mostrarAdditional(int i, int finalizar){
                     long *p;
                     p=(long*)addit[i].rdata;
                     a.sin_addr.s_addr=(*p);
-   
-                    printf("%s  ",addit[i].name);  
-                    printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
 
-                    asignarServidorDNS(inet_ntoa(a.sin_addr));
+                    if (infoConsulta.nroResolucionConsulta != 0){   
+                        printf("%s  ",addit[i].name);  
+                        printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
+                    }else
+                        asignarServidorDNS(inet_ntoa(a.sin_addr));
                 }
                 //Si es IPv6 lo salteo
                 else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
@@ -168,6 +171,7 @@ void logicaAnswer(int i, int finalizar){
     for (i=0; i < ntohs(dns->ans_count); i++){        
         answers[i].name=leerFormatoDNS(reader, buf, &finalizar);
         reader+=finalizar;
+        
         printf("%s",answers[i].name);   
 
         answers[i].resource=(struct R_DATA*)(reader);
@@ -178,7 +182,7 @@ void logicaAnswer(int i, int finalizar){
 }
 
 void logicaAdditional(int i, int finalizar){
- if (dns->add_count>0)
+    if (dns->add_count>0 && infoConsulta.nroResolucionConsulta!=0)
         printf("\n\n;; ADDITIONAL SECTION\n");
     for(i=0;i<ntohs(dns->add_count);i++){
         addit[i].name=leerFormatoDNS(reader,buf,&finalizar);        
@@ -198,15 +202,15 @@ void logicaAuthoritive(int i, int finalizar){
     if (dns->auth_count>0)
         printf("\n\n;; AUTHORITIVE SECTION:\n");
     for(i=0;i<ntohs(dns->auth_count);i++) {
-                auth[i].name=leerFormatoDNS(reader,buf,&finalizar);
+        auth[i].name=leerFormatoDNS(reader,buf,&finalizar);
 
-                reader+=finalizar;
+        reader+=finalizar;
 
-                printf("%s ", auth[i].name);
+        printf("%s ", auth[i].name);
 
-                auth[i].resource=(struct R_DATA*)(reader);
-                reader=reader+sizeof(struct R_DATA);      
-                mostrarAuthoritive(i, finalizar);
+        auth[i].resource=(struct R_DATA*)(reader);
+        reader=reader+sizeof(struct R_DATA);      
+        mostrarAuthoritive(i, finalizar);
    
     }                            
 }
@@ -225,7 +229,8 @@ int buscarIPporNombre(unsigned char* host){
 	int tamanioMensajeSocket=0;       
     struct QUESTION *qinfo = NULL;
 
-    printf("Evaluando la consulta: %s \n\n" , host);	
+    if (infoConsulta.nroResolucionConsulta != 0)
+        printf("Evaluando la consulta: %s " , host);	
 
 	//Se importa con la libreria netinet
     dest.sin_family = AF_INET; //Familia de la direccion
@@ -253,12 +258,14 @@ int buscarIPporNombre(unsigned char* host){
         return 0;
     dns = (struct DNS_HEADER*) buf;
     
-    mostrarContenidoRespuesta(dns);
+    if (infoConsulta.nroResolucionConsulta != 0)
+        mostrarContenidoRespuesta(dns);
     
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  
 
 	leerRegistros();
+    printf("\n");
     return 1;
 }
 
@@ -268,9 +275,8 @@ void consultaIterativa(unsigned char *host, int qtype){
     infoConsulta.nroConsulta=ns_t_ns;
     buscarIPporNombre(primeraLlamada);
     dns->ans_count = 0;
-    while (ntohs(dns->ans_count) == 0)
-    {
-        infoConsulta.nroConsulta=qtype;
+    infoConsulta.nroConsulta=qtype;
+    while (ntohs(dns->ans_count) == 0 && corte==0){        
         buscarIPporNombre(host);
     }
 }

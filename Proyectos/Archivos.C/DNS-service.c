@@ -40,11 +40,11 @@ void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
 }
 
 void mostrarContenidoRespuesta(struct DNS_HEADER *dns){
-	printf("La respuesta contiene: \n");
+	printf("\n\nLa respuesta contiene: \n");
     printf("%d Questions. \n", ntohs(dns->q_count));
     printf("%d Answer. \n", ntohs(dns->ans_count));
     printf("%d Authoritative Servers. \n", ntohs(dns->auth_count));
-    printf("%d Additional records.\n\n", ntohs(dns->add_count));
+    printf("%d Additional records.", ntohs(dns->add_count));
 }
 
 
@@ -58,7 +58,6 @@ u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contado
 	unsigned int offset;
 	unsigned int p=0,salto=0;
     
-    //Lee los nombres en formato DNS(3www6google3com)
     while (*reader!=0) {
         if(*reader >= 192){
             offset = (*reader)*256 + *(reader+1) - 49152; 
@@ -75,8 +74,7 @@ u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contado
     if(salto==1)
         *contador = *contador + 1; 
 
-	 int i, j;
-    //Ahora convierte de 3www6google3com0 a www.google.com
+	int i, j;    
     for (i=0; i < (int)strlen((const char*)nombre); i++){
         p=nombre[i];
         for(j=0;j<(int)p;j++) {
@@ -85,7 +83,9 @@ u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contado
         }
         nombre[i]='.';
     }
-    nombre[i-1]='\0'; //Elimina el ultimo punto
+
+    if (strlen(nombre)==0)
+        nombre[0]='.';  
     
     return nombre;    
 }
