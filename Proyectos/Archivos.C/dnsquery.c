@@ -3,7 +3,9 @@
 #include "../Archivos.H/ayuda.h"
 
 int main (int argc, char* argv[]){ 
-	evaluarIngreso(argv, argc);	
+	int mostrarayuda = evaluarIngreso(argv, argc);	
 	
+	if (mostrarayuda == -1)
+		mensajeAyuda();
 	return 0;
 }

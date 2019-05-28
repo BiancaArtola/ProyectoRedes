@@ -39,7 +39,8 @@ void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
     *dns++='\0'; 
 }
 
-void mostrarContenidoRespuesta(struct DNS_HEADER *dns){
+void mostrarContenidoRespuesta(struct DNS_HEADER *dns,unsigned char* host){
+    printf("Evaluando la consulta: %s " , host);	
 	printf("\n\nLa respuesta contiene: \n");
     printf("%d Questions. \n", ntohs(dns->q_count));
     printf("%d Answer. \n", ntohs(dns->ans_count));

@@ -75,22 +75,6 @@ void consulta_LOC(unsigned char *reader){
     hpstr = precsize_ntoa(horizontalpre);
     vpstr = precsize_ntoa(verticalpre);
 
-    /*resLOC.latdeg = latdeg;
-    resLOC.latsec = latsec;
-    resLOC.latmin = latmin;
-    resLOC.latsecfrac = latsecfrac;
-    resLOC.nortesur = nortesur;
-    resLOC.longdeg = longdeg;
-    resLOC.longmin = longmin;
-    resLOC.longsec = longsec;
-    resLOC.longsecfrac = longsecfrac;
-    resLOC.esteoeste = esteoeste;
-    resLOC.altmeters = altmeters;
-    resLOC.altfrac = altfrac;
-    resLOC.sizestr = sizestr;
-    resLOC.hpstr = hpstr;
-    resLOC.vpstr = vpstr;*/
-
     printf("           IN     LOC     %d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %d.%.2dm %sm %sm %sm \n", 
             latdeg, latmin, latsec, latsecfrac, nortesur, longdeg, longmin, longsec, longsecfrac, 
             esteoeste,altmeters, altfrac, sizestr, hpstr, vpstr);

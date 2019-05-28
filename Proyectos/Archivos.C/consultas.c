@@ -26,7 +26,7 @@ void setPuerto();
 void setTipoConsulta();
 void setTipoResolucionConsulta();
 void setConsulta(char* consulta);
-void evaluarIngreso(char* argv[], int argc);
+int evaluarIngreso(char* argv[], int argc);
 
 int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 	//Retorna 0 si el servidor fue asignado. 1 en caso contrario.
@@ -103,18 +103,21 @@ int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int 
 			(strcmp(parametrosFinales[i], "-loc") == 0)){
 				if (tipoConsulta == NULL)
 					tipoConsulta = parametrosFinales[i];
-				else
+				else{				
 					return 0; //Hubo un error
+				}
 		}
 		else if ((strcmp(parametrosFinales[i], "-r") == 0) ||
 				(strcmp(parametrosFinales[i], "-t") == 0)) {
 					if (tipoResolucionConsulta == NULL)
 						tipoResolucionConsulta = parametrosFinales[i];
-					else
+					else{
+						
 						return 0; //Hubo un error
+					}
 		}
 		else{
-			//mensajeAyuda(); //No ingreso ningun tipo de parametro valido.
+			
 			return 0;
 		}
 	}
@@ -135,8 +138,10 @@ int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], i
 		asignarTipoConsultaPorDefecto();
 		return 1;
 	}
-	else
+	else{
+		
 		mensajeAyuda();
+	}
 }
 
 void setPuerto(){
@@ -167,16 +172,10 @@ void setConsulta(char* consulta){
 	parametros.consulta = consulta;
 }
 
-void evaluarIngreso(char* argv[], int argc){
-	if (argc > 6 || argc < 3)
-		mensajeAyuda();
-	else{
+int evaluarIngreso(char* argv[], int argc){
+	if (argc < 7 && argc>2){
 		if (strcmp(argv[1], "query")==0){
-			if (strcmp(argv[2], "-h")==0){
-				mensajeAyuda();		
-					
-			}
-			else{
+			if (strcmp(argv[2], "-h")!=0){
 				int servidorAsignado = buscarServidorYPuerto(argv, argc);
 				int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
 
@@ -186,11 +185,11 @@ void evaluarIngreso(char* argv[], int argc){
 					setTipoResolucionConsulta();		
 					setConsulta(argv[2]);
 					iniciarDNS(parametros);
-				}else
-					mensajeAyuda();
+					return 0;
+				}
 			}
 		}
-		else
-			mensajeAyuda();
 	}
+	return -1;
 }
+	

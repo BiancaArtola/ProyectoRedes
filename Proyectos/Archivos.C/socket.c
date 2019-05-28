@@ -8,15 +8,17 @@ int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sock
 
     /*TIMEOUT SETTINGS*/
     
-    timeout.tv_sec = 30;           
+    timeout.tv_sec = 10;           
     timeout.tv_usec = 0;
         
     if (setsockopt(socketDNS, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) < 0) {
          perror("Ocurrio un error");
+         return -1;
     }
 
     if (setsockopt(socketDNS, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout)) < 0) {
          perror("Ocurrio un error");
+         return -1;
     }
                
     /*FIN TIMEOUT SETTINGS*/ 
@@ -29,7 +31,7 @@ int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sock
         perror("Ocurrio un error");
         return -1;
     }
-     
+
     
     return tamanioDest;
 }

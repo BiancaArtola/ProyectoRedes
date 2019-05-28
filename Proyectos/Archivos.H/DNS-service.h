@@ -1,16 +1,6 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
-#include<sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/nameser.h>
-#include <sys/types.h> 
-#include <limits.h>
-#include <errno.h>
-#include <stdint.h>
-
 
 struct DNS_HEADER{
     unsigned short id; // identification number
@@ -35,5 +25,5 @@ struct DNS_HEADER{
 };
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
 void asignarPropiedadesDNS(struct DNS_HEADER *dns);
-void mostrarContenidoRespuesta(struct DNS_HEADER *dns);
+void mostrarContenidoRespuesta(struct DNS_HEADER *dns, unsigned char* host);
 u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contador);

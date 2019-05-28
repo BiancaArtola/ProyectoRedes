@@ -9,7 +9,7 @@ struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
 struct sockaddr_in a;
 struct RES_RECORD answers[20],auth[20],addit[20]; 
-unsigned char buf[65536];
+unsigned char buf[512];
 unsigned char *reader;
 int corte =0;
 
@@ -59,13 +59,10 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
     dest.sin_port = (int) infoConsulta.puerto;  
     asignarServidorDNS(infoConsulta.servidor);
      
-   // buscarIPporNombre(infoConsulta.consulta);
-   if (infoConsulta.nroResolucionConsulta == 0){
-       //Seteo el primer servidor para que sea el raiz
-       //infoConsulta.servidor="202.12.27.33";
+   if (infoConsulta.nroResolucionConsulta == C_ITERATIVO){
+       //Seteo el primer servidor para que sea el raiz      
         consultaIterativa(infoConsulta.consulta, infoConsulta.nroConsulta );
-       // descomponer();
-     }
+    }
     else{
       return buscarIPporNombre(infoConsulta.consulta);
     }
@@ -230,9 +227,6 @@ int buscarIPporNombre(unsigned char* host){
 	int tamanioMensajeSocket=0;       
     struct QUESTION *qinfo = NULL;
 
-    if (infoConsulta.nroResolucionConsulta != 0)
-        printf("Evaluando la consulta: %s " , host);	
-
 	//Se importa con la libreria netinet
     dest.sin_family = AF_INET; //Familia de la direccion
     dest.sin_addr.s_addr = inet_addr(infoConsulta.servidor);
@@ -255,12 +249,13 @@ int buscarIPporNombre(unsigned char* host){
     qinfo->qclass = htons(VALOR_CLASS_IN); 
 
     int tamanioDest = crearSocket(buf, tamanioMensajeSocket, dest);
+   
     if (tamanioDest == -1)
         return 0;
     dns = (struct DNS_HEADER*) buf;
     
-    if (infoConsulta.nroResolucionConsulta != 0)
-        mostrarContenidoRespuesta(dns);
+    if (infoConsulta.nroResolucionConsulta != C_ITERATIVO)
+        mostrarContenidoRespuesta(dns, host);
     
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  
@@ -270,13 +265,19 @@ int buscarIPporNombre(unsigned char* host){
     return 1;
 }
 
-void consultaIterativa(unsigned char *host, int qtype){
-    unsigned char primeraLlamada[100];
+void primeraLlamada(){
+  unsigned char primeraLlamada[100];
     strcpy(primeraLlamada, ".");
     infoConsulta.nroConsulta=ns_t_ns;
-    buscarIPporNombre(primeraLlamada);
-    dns->ans_count = 0;
-    infoConsulta.nroConsulta=qtype;
+    int errorSocket = buscarIPporNombre(primeraLlamada); 
+    if (errorSocket == 0)
+       exit(0);
+    dns->ans_count = 0; 
+}
+
+void consultaIterativa(unsigned char *host, int qtype){
+  primeraLlamada();
+     infoConsulta.nroConsulta=qtype;
     while (ntohs(dns->ans_count) == 0 && corte==0){        
         buscarIPporNombre(host);
     }

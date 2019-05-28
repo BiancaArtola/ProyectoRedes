@@ -7,4 +7,4 @@
 #define TIPOCONSULTA_DEFECTO "-a"
 #define TIPORESOLUCION_DEFECTO "-r"
 
-void evaluarIngreso(char* argv[], int argc);
+int evaluarIngreso(char* argv[], int argc);
