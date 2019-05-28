@@ -14,7 +14,7 @@ unsigned char *reader;
 
 void asignarInformacion(struct informacionConsultaDNS parametros);
 void asignarServidorDNS(char* servidor);
-void buscarIPporNombre(unsigned char *host);
+int buscarIPporNombre(unsigned char *host);
 void consultaIterativa(unsigned char *host, int qtype);
 
 /*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
@@ -66,9 +66,8 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
        // descomponer();
      }
     else{
-      buscarIPporNombre(infoConsulta.consulta);
-     }
-    return 0;
+      return buscarIPporNombre(infoConsulta.consulta);
+    }
 }
 
 void mostrarAnswers(int i, int finalizar){
@@ -220,7 +219,7 @@ void leerRegistros(){
     logicaAdditional(i, finalizar);
 }
 
-void buscarIPporNombre(unsigned char* host){	
+int buscarIPporNombre(unsigned char* host){	
     unsigned char *qname;
     int j;   
 	int tamanioMensajeSocket=0;       
@@ -250,7 +249,8 @@ void buscarIPporNombre(unsigned char* host){
     qinfo->qclass = htons(VALOR_CLASS_IN); 
 
     int tamanioDest = crearSocket(buf, tamanioMensajeSocket, dest);
- 
+    if (tamanioDest == -1)
+        return 0;
     dns = (struct DNS_HEADER*) buf;
     
     mostrarContenidoRespuesta(dns);
@@ -259,6 +259,7 @@ void buscarIPporNombre(unsigned char* host){
     reader = &buf[tamanioDest];  
 
 	leerRegistros();
+    return 1;
 }
 
 void consultaIterativa(unsigned char *host, int qtype){

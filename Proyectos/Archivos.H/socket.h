@@ -3,7 +3,11 @@
 #include<stdlib.h>
 #include<sys/socket.h>
 #include <netinet/in.h>
+#include <sys/types.h>  
+#include <sys/time.h>
+#include <time.h>
 
+struct timeval timeout;
 
 int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sockaddr_in dest);
 
