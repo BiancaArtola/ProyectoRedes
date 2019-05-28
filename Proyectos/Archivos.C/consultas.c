@@ -114,7 +114,7 @@ int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int 
 						return 0; //Hubo un error
 		}
 		else{
-			mensajeAyuda(); //No ingreso ningun tipo de parametro valido.
+			//mensajeAyuda(); //No ingreso ningun tipo de parametro valido.
 			return 0;
 		}
 	}
@@ -172,15 +172,22 @@ void evaluarIngreso(char* argv[], int argc){
 		mensajeAyuda();
 	else{
 		if (strcmp(argv[1], "query")==0){
-			int servidorAsignado = buscarServidorYPuerto(argv, argc);
-			int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
+			if (strcmp(argv[2], "-h")==0){
+				mensajeAyuda();		
+					
+			}
+			else{
+				int servidorAsignado = buscarServidorYPuerto(argv, argc);
+				int hayParametrosAsignados=evaluarOpcionesIngreso(servidorAsignado, argv, argc);
 
-			if (hayParametrosAsignados != 0){			
-				setPuerto();				
-				setTipoConsulta();
-				setTipoResolucionConsulta();		
-				setConsulta(argv[2]);
-				iniciarDNS(parametros);
+				if (hayParametrosAsignados != 0){			
+					setPuerto();				
+					setTipoConsulta();
+					setTipoResolucionConsulta();		
+					setConsulta(argv[2]);
+					iniciarDNS(parametros);
+				}else
+					mensajeAyuda();
 			}
 		}
 		else

@@ -84,6 +84,7 @@ void mostrarAnswers(int i, int finalizar){
             p=(long*)answers[i].rdata;
             a.sin_addr.s_addr=(*p);      
             printf("  IN     A      %s \n", inet_ntoa(a.sin_addr));
+            corte=-1;
         }
         else if (ntohs(answers[i].resource->type)==ns_t_mx ) {
             *answers[i].rdata = *(reader+1);      
