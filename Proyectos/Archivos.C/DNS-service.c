@@ -1,20 +1,24 @@
 #include "../Archivos.H/DNS-service.h"
 
-
+/**
+ * 	Metodo encargado de asignar propiedades al struct DNS.
+ *  Parametros:
+ * * dns: estructura que contiene todas las propiedades del dns
+**/
 void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
 	dns->id = (unsigned short) htons(getpid());
-    dns->qr = 0; //This is a query
-    dns->opcode = 0; //This is a standard query
-    dns->aa = 0; //Not Authoritative
-    dns->tc = 0; //This message is not truncated
+    dns->qr = 0; 
+    dns->opcode = 0; 
+    dns->aa = 0; 
+    dns->tc = 0; 
     //dns->rd = infoConsulta.nroResolucionConsulta; //Indicara si la consulta es recursiva o iterativa
     dns->rd=1;
-    dns->ra = 0; //Recursion not available! hey we dont have it (lol)
+    dns->ra = 0; 
     dns->z = 0;
     dns->ad = 0;
     dns->cd = 0;
     dns->rcode = 0;
-    dns->q_count = htons(1); //we have only 1 question
+    dns->q_count = htons(1); 
     dns->ans_count= 0;
     dns->auth_count = 0;
     dns->add_count = 0;
@@ -22,7 +26,10 @@ void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
 
 
 /*
- * Convierte la consulta ingresada por el usuario a una consulta DNS
+ * Metodo encargado de convertir la consulta ingresada por el usuario a una consulta DNS
+ * Parametros:
+ * dns: consulta DNS 
+ * host: consulta ingresada por el usuario
  * */
  void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host){ 
     int lock = 0 ;     
@@ -39,6 +46,12 @@ void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
     *dns++='\0'; 
 }
 
+/**
+* Metodo encargado de mostrar el contenido de la respuesta a la consulta del usuario.
+* Parametros:
+* dns: estructura que contiene todas las propiedades del dns
+* host: consulta ingresada por el usuario
+**/
 void mostrarContenidoRespuesta(struct DNS_HEADER *dns,unsigned char* host){
     printf("Evaluando la consulta: %s " , host);	
 	printf("\n\nLa respuesta contiene: \n");

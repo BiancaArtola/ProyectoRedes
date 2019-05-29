@@ -3,6 +3,11 @@
 static char *precsize_ntoa(u_int8_t  prec);
 void consulta_LOC(unsigned char*);
 
+/**
+ * 	Metodo encargado de realizar una consulta de tipo LOC
+ * Parametros:
+ * * reader: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+**/
 void consulta_LOC(unsigned char *reader){
 	unsigned char *rcp;
 	int latdeg, latmin, latsec, latsecfrac;
@@ -80,8 +85,10 @@ void consulta_LOC(unsigned char *reader){
             esteoeste,altmeters, altfrac, sizestr, hpstr, vpstr);
 }
 
-static char *precsize_ntoa(u_int8_t  prec)
-{
+/**
+ * 	Metodo provisto por el RFC 1876 ????
+**/
+static char *precsize_ntoa(u_int8_t  prec){
     static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
     1000000,10000000,100000000,1000000000};
     static char retbuf[sizeof("90000000.00")];

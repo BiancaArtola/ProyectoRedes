@@ -2,8 +2,8 @@
 #include "../Archivos.H/ayuda.h"
 
 /**
- * Lee el mensaje de ayuda de un archivo y lo muestra por pantalla
- * */
+ * Lee el mensaje de ayuda de un archivo y lo muestra por pantalla.
+ **/
 void mensajeAyuda(){
 	FILE *archivo;
 	char caracter;

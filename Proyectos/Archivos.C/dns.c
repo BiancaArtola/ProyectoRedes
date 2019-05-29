@@ -18,10 +18,12 @@ void asignarServidorDNS(char* servidor);
 int buscarIPporNombre(unsigned char *host);
 void consultaIterativa(unsigned char *host, int qtype);
 
-/*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
- * Si el usuario ya asigno un servidor, se setea ese servidor
+/** Metodo encargado de asignar un servidor: 
+ * --> Si el usuario no asigno ningun servidor, se asigna el servidor por defecto
+ * --> Si el usuario ya asigno un servidor, se setea ese servidor
+ * Parametros:
+ * servidor: string que contiene el servidor ingresado por el usuario
  * */
-
 void asignarServidorDNS(char* servidor){
 	if (strcmp(servidor, "") == 0){
 		FILE *fp;
@@ -44,6 +46,10 @@ void asignarServidorDNS(char* servidor){
     infoConsulta.servidor = servidorDNS;
 }
 
+/** Metodo encargado de asignar la informacion ingresada por el usuario en una estructura global utilizada por la clase.
+ * Parametros:
+ * -parametros: estructura con la informacion de la query del usuario.
+ **/
 void asignarInformacion(struct informacionConsultaDNS parametros){
     infoConsulta.servidor = parametros.servidor;
     infoConsulta.puerto = parametros.puerto;
@@ -52,6 +58,10 @@ void asignarInformacion(struct informacionConsultaDNS parametros){
     infoConsulta.consulta = parametros.consulta;
 }
 
+/** Metodo que inicia la consulta DNS. Setea los parametros ingresados por el usuario y comienza la consulta al servidor
+ * Parametros:
+ * -parametros: estructura con la informacion de la query del usuario.
+ **/
 int iniciarDNS(struct informacionConsultaDNS parametros){
     //asignarStruct(parametros, infoConsulta);
 
@@ -68,6 +78,11 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
     }
 }
 
+/** Metodo que muestra las respuestas de tipo ANSWER.
+ * Parametros:
+ * -i: contador del for
+ * -finalizar: indica donde finalizo la respuesta anterior
+ **/
 void mostrarAnswers(int i, int finalizar){
     if(ntohs(answers[i].resource->type)==ns_t_a) {
             int j;
@@ -109,6 +124,11 @@ void mostrarAnswers(int i, int finalizar){
         }
 }
 
+/** Metodo que muestra las respuestas de tipo AUTHORITIVE.
+ * Parametros:
+ * -i: contador del for
+ * -finalizar: indica donde finalizo la respuesta anterior
+ **/
 int mostrarAuthoritive(int i, int finalizar){
      if (ntohs(auth[i].resource->type)==ns_t_soa )
     {
@@ -138,6 +158,11 @@ int mostrarAuthoritive(int i, int finalizar){
         }
 }
 
+/** Metodo que muestra las respuestas de tipo ADDITIONAL.
+ * Parametros:
+ * -i: contador del for
+ * -finalizar: indica donde finalizo la respuesta anterior
+ **/
 mostrarAdditional(int i, int finalizar){
     if(ntohs(addit[i].resource->type)==ns_t_a) {
                     int j;
@@ -163,6 +188,11 @@ mostrarAdditional(int i, int finalizar){
                 }  
 }
 
+/** Metodo que realiza la logica de las consultas de tipo ANSWER.
+ * Parametros:
+ * -i: contador del for
+ * -finalizar: indica donde finalizo la respuesta anterior
+ **/
 void logicaAnswer(int i, int finalizar){
     if (dns->ans_count>0)
         printf("\n\n;; ANSWERS SECTION\n");
@@ -179,6 +209,11 @@ void logicaAnswer(int i, int finalizar){
     }
 }
 
+/** Metodo que realiza la logica de las consultas de tipo ADDITIONAL.
+ * Parametros:
+ * -i: contador del for
+ * -finalizar: indica donde finalizo la respuesta anterior
+ **/
 void logicaAdditional(int i, int finalizar){
     if (dns->add_count>0 && infoConsulta.nroResolucionConsulta!=0)
         printf("\n\n;; ADDITIONAL SECTION\n");
@@ -196,6 +231,11 @@ void logicaAdditional(int i, int finalizar){
     }
 }
 
+/** Metodo que realiza la logica de las consultas de tipo AUTHORITIVE.
+ * Parametros:
+ * -i: contador del for
+ * -finalizar: indica donde finalizo la respuesta anterior
+ **/
 void logicaAuthoritive(int i, int finalizar){
     if (dns->auth_count>0)
         printf("\n\n;; AUTHORITIVE SECTION:\n");
@@ -213,6 +253,8 @@ void logicaAuthoritive(int i, int finalizar){
     }                            
 }
 
+/** Metodo que se encarga de derivar la realizacion de consultas ??!?!?!?! pq se llamaba leer registros no?
+ **/
 void leerRegistros(){
     int finalizar=0;
 	int i = 0;
@@ -221,6 +263,11 @@ void leerRegistros(){
     logicaAdditional(i, finalizar);
 }
 
+/** Metodo que se encarga de TODO NOSE
+ *  Retorna 0 en caso de que ocurra algun error con el socket. Retorna 1 en caso de una consulta exitosa.
+ * Parametros:
+ * - host: consulta ingresada por el usuario
+ **/
 int buscarIPporNombre(unsigned char* host){	
     unsigned char *qname;
     int j;   
@@ -265,6 +312,8 @@ int buscarIPporNombre(unsigned char* host){
     return 1;
 }
 
+/** Metodo que se encarga de realizar la primera llamada con un PUNTO al servidor en caso de que se haya requerido una consulta iterativa.
+ **/
 void primeraLlamada(){
   unsigned char primeraLlamada[100];
     strcpy(primeraLlamada, ".");
@@ -275,6 +324,12 @@ void primeraLlamada(){
     dns->ans_count = 0; 
 }
 
+
+/** Metodo encargado de realizar la consulta iterativa.
+ * Parametros: 
+ * - host: consulta ingresada por el usuario
+ * - qtype: indica el tipo de consulta que indico el usuario
+ * */
 void consultaIterativa(unsigned char *host, int qtype){
   primeraLlamada();
      infoConsulta.nroConsulta=qtype;
