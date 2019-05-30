@@ -9,9 +9,14 @@ struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
 struct sockaddr_in a;
 struct RES_RECORD answers[20],auth[20],addit[20]; 
+struct hostent *servidorAuxiliar;
+struct in_addr ip_addr;
 unsigned char buf[512];
 unsigned char *reader;
 int corte =0;
+unsigned char* servidorDeAnswer;
+unsigned char* servidorDeAuthoritive;
+unsigned char* servidorAdditional;
 
 void asignarInformacion(struct informacionConsultaDNS parametros);
 void asignarServidorDNS(char* servidor);
@@ -115,7 +120,8 @@ void mostrarAnswers(int i, int finalizar){
             reader+=finalizar;
         }else if (ntohs(answers[i].resource->type)==ns_t_ns ){           
              answers[i].rdata = leerFormatoDNS(reader, buf, &finalizar);   
-             reader+=finalizar;     
+             reader+=finalizar; 
+             servidorDeAnswer= answers[i].rdata;
              printf("     IN    NS    %s \n", answers[i].rdata);    
         }
         else if (ntohs(answers[i].resource->type)==ns_t_loc )
@@ -152,9 +158,10 @@ int mostrarAuthoritive(int i, int finalizar){
     } 
     else if (ntohs(auth[i].resource->type)==ns_t_ns )
         {
-            answers[i].rdata = leerFormatoDNS(reader, buf, &finalizar);   
+            auth[i].rdata = leerFormatoDNS(reader, buf, &finalizar);   
             reader+=finalizar;     
-            printf("     IN    NS    %s \n", answers[i].rdata);  
+            servidorDeAuthoritive=auth[i].rdata;
+            printf("     IN    NS    %s \n", auth[i].rdata);  
         }
 }
 
@@ -180,7 +187,7 @@ mostrarAdditional(int i, int finalizar){
                         printf("%s  ",addit[i].name);  
                         printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
                     }else
-                        asignarServidorDNS(inet_ntoa(a.sin_addr));
+                        servidorAdditional=inet_ntoa(a.sin_addr);
                 }
                 //Si es IPv6 lo salteo
                 else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
@@ -321,9 +328,17 @@ void primeraLlamada(){
     int errorSocket = buscarIPporNombre(primeraLlamada); 
     if (errorSocket == 0)
        exit(0);
-    dns->ans_count = 0; 
 }
 
+void asignarServidorAuxiliar(unsigned char* servidor)
+{
+     servidorAuxiliar = gethostbyname(servidor);
+        if (!servidorAuxiliar) {
+            exit(EXIT_FAILURE);
+        }
+        ip_addr = *(struct in_addr *)(servidorAuxiliar->h_addr);
+        asignarServidorDNS(inet_ntoa(ip_addr));
+}
 
 /** Metodo encargado de realizar la consulta iterativa.
  * Parametros: 
@@ -331,9 +346,25 @@ void primeraLlamada(){
  * - qtype: indica el tipo de consulta que indico el usuario
  * */
 void consultaIterativa(unsigned char *host, int qtype){
-  primeraLlamada();
+     primeraLlamada();
      infoConsulta.nroConsulta=qtype;
-    while (ntohs(dns->ans_count) == 0 && corte==0){        
+     if (ntohs(dns->add_count)==0)
+     {
+       asignarServidorAuxiliar(servidorDeAnswer);
+     }
+     else{
+         asignarServidorDNS(servidorAdditional);
+     }
+    dns->ans_count = 0; 
+    while (ntohs(dns->ans_count) == 0 && corte==0){
+        infoConsulta.nroConsulta=qtype;
         buscarIPporNombre(host);
+        if (ntohs(dns->add_count)==0)
+            {
+                asignarServidorAuxiliar(servidorDeAuthoritive);
+            }
+            else{
+                asignarServidorDNS(servidorAdditional);
+            }
     }
 }

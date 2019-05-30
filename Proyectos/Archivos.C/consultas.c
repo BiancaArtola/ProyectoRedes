@@ -125,7 +125,6 @@ void asignarTipoConsultaPorDefecto(){
 		tipoResolucionConsulta = TIPORESOLUCION_DEFECTO;
 }
 
-
 /**
  * 	Metodo encargado de evaluar el correcto ingreso del tipo de consulta por defecto y del tipo de resolucion de consulta
  * 	Retorna 0 en caso de que haya algun error en el ingreso. Retorna 1 caso contrario.

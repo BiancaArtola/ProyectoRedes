@@ -3,6 +3,7 @@
 #include<stdlib.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
+#include <netdb.h>
 
 //Servidor DNS
 char servidorDNS[10];
