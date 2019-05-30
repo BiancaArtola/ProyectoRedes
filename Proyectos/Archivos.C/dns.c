@@ -341,6 +341,7 @@ void asignarServidorAuxiliar(unsigned char* servidor)
 {
      servidorAuxiliar = gethostbyname(servidor);
         if (!servidorAuxiliar) {
+            printf("Ocurrio un error - Servidor incorrecto \n");
             exit(EXIT_FAILURE);
         }
         ip_addr = *(struct in_addr *)(servidorAuxiliar->h_addr);
