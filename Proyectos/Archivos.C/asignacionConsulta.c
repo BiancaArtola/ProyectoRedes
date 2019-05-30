@@ -1,7 +1,9 @@
 #include "../Archivos.H/asignacionConsulta.h"
 #include <stdio.h>
 
-/*Si el usuario no asigno ningun servidor, se asigna el servidor por defecto.
+/**
+ * Si el usuario no asigno ningun servidor, se asigna el servidor por defecto, el cual
+ * es obtenido en el archivo "resolv.conf".
  * Si el usuario ya asigno un servidor, se setea ese servidor
  * */
 void asignarServidorDNS(char* servidor, struct informacionConsultaDNS infoConsulta){
@@ -27,6 +29,9 @@ void asignarServidorDNS(char* servidor, struct informacionConsultaDNS infoConsul
      infoConsulta.servidor = servidorDNS;
 }
 
+/**
+ * Se asignan los parametros ingresados por el usuario
+ * */
 void asignarInformacion(struct informacionConsultaDNS parametros, struct informacionConsultaDNS infoConsulta){
     infoConsulta.servidor = parametros.servidor;
     infoConsulta.puerto = parametros.puerto;

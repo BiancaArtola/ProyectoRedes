@@ -24,6 +24,6 @@ struct DNS_HEADER{
     unsigned short add_count; // number of resource entries
 };
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
-void asignarPropiedadesDNS(struct DNS_HEADER *dns);
+void asignarPropiedadesDNS(struct DNS_HEADER *dns, int bitRecursion);
 void mostrarContenidoRespuesta(struct DNS_HEADER *dns, unsigned char* host);
 u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contador);
