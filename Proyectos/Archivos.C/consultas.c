@@ -1,6 +1,5 @@
 #include "../Archivos.H/consultas.h"
 #include "../Archivos.H/dns.h"
-#include "../Archivos.H/ayuda.h"
 #include <stdio.h>
 
 struct parametrosConsulta {
@@ -186,9 +185,9 @@ int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], i
 		asignarTipoConsultaPorDefecto();
 		return 1;
 	}
-	else{		
-		mensajeAyuda();
-	}
+	else	
+		return 0;
+	
 }
 
 /**
