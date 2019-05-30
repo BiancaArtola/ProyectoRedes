@@ -22,6 +22,7 @@ void asignarInformacion(struct informacionConsultaDNS parametros);
 void asignarServidorDNS(char* servidor);
 int buscarIPporNombre(unsigned char *host);
 void consultaIterativa(unsigned char *host, int qtype);
+void asignarServidorAuxiliar(unsigned char* servidor);
 
 /** Metodo encargado de asignar un servidor: 
  * --> Si el usuario no asigno ningun servidor, se asigna el servidor por defecto
@@ -47,7 +48,7 @@ void asignarServidorDNS(char* servidor){
 		strcpy(servidorDNS, p);
 	}
 	else
-		strcpy(servidorDNS, servidor);
+		asignarServidorAuxiliar(servidor);
     infoConsulta.servidor = servidorDNS;
 }
 
@@ -73,6 +74,7 @@ int iniciarDNS(struct informacionConsultaDNS parametros){
     asignarInformacion(parametros);
     dest.sin_port = (int) infoConsulta.puerto;  
     asignarServidorDNS(infoConsulta.servidor);
+    //asignarServidorAuxiliar(infoConsulta.servidor);
      
    if (infoConsulta.nroResolucionConsulta == C_ITERATIVO){
        //Seteo el primer servidor para que sea el raiz      
@@ -187,7 +189,7 @@ mostrarAdditional(int i, int finalizar){
                         printf("%s  ",addit[i].name);  
                         printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
                     }else
-                        servidorAdditional=inet_ntoa(a.sin_addr);
+                        asignarServidorDNS(inet_ntoa(a.sin_addr));
                 }
                 //Si es IPv6 lo salteo
                 else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
@@ -288,7 +290,7 @@ int buscarIPporNombre(unsigned char* host){
 	dns = NULL;	
     //Asigna la estructura DNS para queries estandar
     dns = (struct DNS_HEADER *)&buf;
-	asignarPropiedadesDNS(dns);    
+	asignarPropiedadesDNS(dns, infoConsulta.nroResolucionConsulta);    
 
     //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
@@ -330,6 +332,10 @@ void primeraLlamada(){
        exit(0);
 }
 
+/** Metodo encargado de mapear un name server a su correspondiente IP
+ * Parametros: 
+ * - servidor: servidor al cual se le realiza la consulta
+ * */
 void asignarServidorAuxiliar(unsigned char* servidor)
 {
      servidorAuxiliar = gethostbyname(servidor);
@@ -337,7 +343,7 @@ void asignarServidorAuxiliar(unsigned char* servidor)
             exit(EXIT_FAILURE);
         }
         ip_addr = *(struct in_addr *)(servidorAuxiliar->h_addr);
-        asignarServidorDNS(inet_ntoa(ip_addr));
+        strcpy(servidorDNS, inet_ntoa(ip_addr));
 }
 
 /** Metodo encargado de realizar la consulta iterativa.
@@ -347,24 +353,17 @@ void asignarServidorAuxiliar(unsigned char* servidor)
  * */
 void consultaIterativa(unsigned char *host, int qtype){
      primeraLlamada();
-     infoConsulta.nroConsulta=qtype;
      if (ntohs(dns->add_count)==0)
      {
        asignarServidorAuxiliar(servidorDeAnswer);
-     }
-     else{
-         asignarServidorDNS(servidorAdditional);
      }
     dns->ans_count = 0; 
     while (ntohs(dns->ans_count) == 0 && corte==0){
         infoConsulta.nroConsulta=qtype;
         buscarIPporNombre(host);
-        if (ntohs(dns->add_count)==0)
+        if (ntohs(dns->add_count)==0 && (ntohs(dns->ans_count)==0)&& corte==0)
             {
                 asignarServidorAuxiliar(servidorDeAuthoritive);
-            }
-            else{
-                asignarServidorDNS(servidorAdditional);
             }
     }
 }

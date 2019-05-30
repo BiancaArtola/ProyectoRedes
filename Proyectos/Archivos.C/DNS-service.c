@@ -5,14 +5,13 @@
  *  Parametros:
  * * dns: estructura que contiene todas las propiedades del dns
 **/
-void asignarPropiedadesDNS(struct DNS_HEADER *dns ){
+void asignarPropiedadesDNS(struct DNS_HEADER *dns, int bitRecursion ){
 	dns->id = (unsigned short) htons(getpid());
     dns->qr = 0; 
     dns->opcode = 0; 
     dns->aa = 0; 
     dns->tc = 0; 
-    //dns->rd = infoConsulta.nroResolucionConsulta; //Indicara si la consulta es recursiva o iterativa
-    dns->rd=1;
+    dns->rd = bitRecursion;
     dns->ra = 0; 
     dns->z = 0;
     dns->ad = 0;
