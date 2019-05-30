@@ -1,5 +1,11 @@
 #include "../Archivos.H/DNS-service.h"
 
+void asignarPropiedadesDNS(struct DNS_HEADER *, int );
+void cambiarAFormatoDNS(unsigned char*,unsigned char*);
+void mostrarContenidoRespuesta(struct DNS_HEADER *,unsigned char*);
+u_char* leerFormatoDNS(unsigned char*,unsigned char*, int*);
+
+
 /**
  * 	Metodo encargado de asignar propiedades al struct DNS.
  *  Parametros:
@@ -23,8 +29,7 @@ void asignarPropiedadesDNS(struct DNS_HEADER *dns, int bitRecursion ){
     dns->add_count = 0;
 }
 
-
-/*
+/**
  * Metodo encargado de convertir la consulta ingresada por el usuario a una consulta DNS
  * Parametros:
  * dns: consulta DNS 
@@ -60,13 +65,17 @@ void mostrarContenidoRespuesta(struct DNS_HEADER *dns,unsigned char* host){
     printf("%d Additional records.", ntohs(dns->add_count));
 }
 
-
+/**
+ * Metodo que analiza la respuesta contenida en el buffer y la convierte. 
+ * -buffer: Contiene la respuesta provista por el socket en formato DNS.
+ * -reader= Contiene la respuesta correspondiente obtenida del buffer.
+ * */
 u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contador){ 
     *contador = 1;
     
     unsigned char *nombre;
     nombre = (unsigned char*)malloc(256);
-    nombre[0]='\0'; //caracter nulo
+    nombre[0]='\0';
 
 	unsigned int offset;
 	unsigned int p=0,salto=0;
@@ -96,9 +105,7 @@ u_char* leerFormatoDNS(unsigned char* reader,unsigned char* buffer, int* contado
         }
         nombre[i]='.';
     }
-
     if (strlen(nombre)==0)
         nombre[0]='.';  
-    
     return nombre;    
 }

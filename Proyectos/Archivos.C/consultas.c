@@ -13,19 +13,19 @@ struct parametrosConsulta {
 char* tipoConsulta;
 char* tipoResolucionConsulta;
 
-int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros);
-int buscarPuerto(char* parametroServidor);
-void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuerto);
+int buscarServidorYPuerto(char* parametroParaEvaluar[], int );
+int buscarPuerto(char*);
+void asignarServidorConPuerto(char parametroServidor[], int );
 void asignarServidorSinPuerto(char parametroServidor[]);
 void evaluarPuerto(char parametroServidor[]);
 void asignarTipoConsultaPorDefecto();
-int evaluarParametrosFinales(char* parametrosFinales[], int cantParametros, int comienzoParametros);
-int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], int cantParametros);
+int evaluarParametrosFinales(char* parametrosFinales[], int, int);
+int evaluarOpcionesIngreso(int, char* parametrosIngresados[], int);
 void setPuerto();
 void setTipoConsulta();
 void setTipoResolucionConsulta();
-void setConsulta(char* consulta);
-int evaluarIngreso(char* argv[], int argc);
+void setConsulta(char*);
+int evaluarIngreso(char* argv[], int);
 
 /**
  * 	Metodo encargado de evaluar si se ingreso servidor.
@@ -70,7 +70,6 @@ int buscarPuerto(char* parametroServidor){
 	return posicionComienzoPuerto;
 }
 
-
 /**
  * 	Metodo encargado de asignar SERVIDOR y PUERTO en caso de que se hayan ingresado.
  * 	Parametros:
@@ -89,8 +88,6 @@ void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuer
 	//Como el primer caracter ingresado es @, hacemos el +1
 	strncpy(parametros.servidor, parametroServidor, posicionComienzoPuerto-1);
 	strcpy(parametros.servidor, parametros.servidor+1);
-
-
 }
 
 /**
@@ -190,7 +187,6 @@ int evaluarOpcionesIngreso(int servidorAsignado, char* parametrosIngresados[], i
 	}
 	else	
 		return 0;
-	
 }
 
 /**

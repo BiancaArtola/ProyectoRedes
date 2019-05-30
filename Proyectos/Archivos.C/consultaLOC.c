@@ -1,12 +1,11 @@
 #include "../Archivos.H/consultaLOC.h"
 
-static char *precsize_ntoa(u_int8_t  prec);
+static char *precsize_ntoa(u_int8_t);
 void consulta_LOC(unsigned char*);
-
 /**
  * 	Metodo encargado de realizar una consulta de tipo LOC
  * Parametros:
- * * reader: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+ * -reader: contiene la respuesta correspondiente a la consulta realizada
 **/
 void consulta_LOC(unsigned char *reader){
 	unsigned char *rcp;
@@ -86,7 +85,7 @@ void consulta_LOC(unsigned char *reader){
 }
 
 /**
- * 	Metodo provisto por el RFC 1876 ????
+ * 	Metodo provisto por el RFC 1876
 **/
 static char *precsize_ntoa(u_int8_t  prec){
     static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,

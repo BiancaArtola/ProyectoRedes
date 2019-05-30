@@ -1,9 +1,7 @@
 #include "../Archivos.H/dns.h"
-
 #include "../Archivos.H/DNS-service.h"
 #include "../Archivos.H/consultaLOC.h"
 #include "../Archivos.H/socket.h"
-
 
 struct sockaddr_in dest;
 struct DNS_HEADER *dns ;
@@ -18,11 +16,19 @@ unsigned char* servidorDeAnswer;
 unsigned char* servidorDeAuthoritive;
 unsigned char* servidorAdditional;
 
-void asignarInformacion(struct informacionConsultaDNS parametros);
-void asignarServidorDNS(char* servidor);
-int buscarIPporNombre(unsigned char *host);
-void consultaIterativa(unsigned char *host, int qtype);
-void asignarServidorAuxiliar(unsigned char* servidor);
+void asignarServidorDNS(char*);
+void asignarInformacion(struct informacionConsultaDNS);
+int iniciarDNS(struct informacionConsultaDNS);
+void mostrarAnswers(int, int);
+int mostrarAuthoritive(int, int);
+void mostrarAdditional(int, int);
+void logicaAnswer(int, int);
+void logicaAdditional(int, int);
+void logicaAuthoritive(int, int);
+void logicaRegistros();
+int realizarConsulta(unsigned char *);
+void asignarServidorAuxiliar(unsigned char*);
+void consultaIterativa(unsigned char *, int);
 
 /** Metodo encargado de asignar un servidor: 
  * --> Si el usuario no asigno ningun servidor, se asigna el servidor por defecto
@@ -69,19 +75,14 @@ void asignarInformacion(struct informacionConsultaDNS parametros){
  * -parametros: estructura con la informacion de la query del usuario.
  **/
 int iniciarDNS(struct informacionConsultaDNS parametros){
-    //asignarStruct(parametros, infoConsulta);
-
     asignarInformacion(parametros);
     dest.sin_port = (int) infoConsulta.puerto;  
     asignarServidorDNS(infoConsulta.servidor);
-    //asignarServidorAuxiliar(infoConsulta.servidor);
-     
    if (infoConsulta.nroResolucionConsulta == C_ITERATIVO){
-       //Seteo el primer servidor para que sea el raiz      
         consultaIterativa(infoConsulta.consulta, infoConsulta.nroConsulta );
     }
     else{
-      return buscarIPporNombre(infoConsulta.consulta);
+      return realizarConsulta(infoConsulta.consulta);
     }
 }
 
@@ -172,29 +173,29 @@ int mostrarAuthoritive(int i, int finalizar){
  * -i: contador del for
  * -finalizar: indica donde finalizo la respuesta anterior
  **/
-mostrarAdditional(int i, int finalizar){
+void mostrarAdditional(int i, int finalizar){
     if(ntohs(addit[i].resource->type)==ns_t_a) {
-                    int j;
-                    for(j=0;j<ntohs(addit[i].resource->data_len);j++){
-                        addit[i].rdata[j]=reader[j];
-                    }
-                    addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
-                    reader+=ntohs(addit[i].resource->data_len);
+		int j;
+		for(j=0;j<ntohs(addit[i].resource->data_len);j++){
+			addit[i].rdata[j]=reader[j];
+		}
+		addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
+		reader+=ntohs(addit[i].resource->data_len);
 
-                    long *p;
-                    p=(long*)addit[i].rdata;
-                    a.sin_addr.s_addr=(*p);
+		long *p;
+		p=(long*)addit[i].rdata;
+		a.sin_addr.s_addr=(*p);
 
-                    if (infoConsulta.nroResolucionConsulta != 0){   
-                        printf("%s  ",addit[i].name);  
-                        printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
-                    }else
-                        asignarServidorDNS(inet_ntoa(a.sin_addr));
-                }
-                //Si es IPv6 lo salteo
-                else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
-                    reader+=ntohs(addit[i].resource->data_len);
-                }  
+		if (infoConsulta.nroResolucionConsulta != 0){   
+			printf("%s  ",addit[i].name);  
+			printf("  IN     A            %s \n",  inet_ntoa(a.sin_addr));
+		}else
+			asignarServidorDNS(inet_ntoa(a.sin_addr));
+	}
+	//Si es IPv6 lo salteo
+	else if (ntohs(addit[i].resource->type)==ns_t_aaaa ) {
+		reader+=ntohs(addit[i].resource->data_len);
+	}  
 }
 
 /** Metodo que realiza la logica de las consultas de tipo ANSWER.
@@ -215,7 +216,6 @@ void logicaAnswer(int i, int finalizar){
         reader=reader+sizeof(struct R_DATA);    
         answers[i].rdata= (unsigned char*)malloc(ntohs(answers[i].resource->data_len));
         mostrarAnswers(i, finalizar);     
-      
     }
 }
 
@@ -259,13 +259,13 @@ void logicaAuthoritive(int i, int finalizar){
         auth[i].resource=(struct R_DATA*)(reader);
         reader=reader+sizeof(struct R_DATA);      
         mostrarAuthoritive(i, finalizar);
-   
     }                            
 }
 
-/** Metodo que se encarga de derivar la realizacion de consultas ??!?!?!?! pq se llamaba leer registros no?
+/**
+* Metodo que se encarga de derivar la realizacion de consultas
  **/
-void leerRegistros(){
+void logicaRegistros(){
     int finalizar=0;
 	int i = 0;
     logicaAnswer(i, finalizar);
@@ -273,36 +273,33 @@ void leerRegistros(){
     logicaAdditional(i, finalizar);
 }
 
-/** Metodo que se encarga de TODO NOSE
+/** Metodo principal de la clase, la cual se encarga de llamar los diferentes metodos para concretar la consulta
  *  Retorna 0 en caso de que ocurra algun error con el socket. Retorna 1 en caso de una consulta exitosa.
  * Parametros:
  * - host: consulta ingresada por el usuario
  **/
-int buscarIPporNombre(unsigned char* host){	
+int realizarConsulta(unsigned char* host){	
     unsigned char *qname;
     int j;   
 	int tamanioMensajeSocket=0;       
     struct QUESTION *qinfo = NULL;
 
-	//Se importa con la libreria netinet
-    dest.sin_family = AF_INET; //Familia de la direccion
+    dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(infoConsulta.servidor);
 
 	dns = NULL;	
-    //Asigna la estructura DNS para queries estandar
+
     dns = (struct DNS_HEADER *)&buf;
 	asignarPropiedadesDNS(dns, infoConsulta.nroResolucionConsulta);    
 
-    //Apunta a la parte del query
     tamanioMensajeSocket = sizeof(struct DNS_HEADER);
     qname =(unsigned char*)&buf[tamanioMensajeSocket];
   
     cambiarAFormatoDNS(qname, host);
 
-    //Informacion de consulta
     tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
     qinfo =(struct QUESTION*)&buf[tamanioMensajeSocket];	
-    qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
+    qinfo->qtype = htons(infoConsulta.nroConsulta);
     qinfo->qclass = htons(ns_c_in); 
 
     int tamanioDest = crearSocket(buf, tamanioMensajeSocket, dest);
@@ -317,7 +314,7 @@ int buscarIPporNombre(unsigned char* host){
     tamanioDest = sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION);
     reader = &buf[tamanioDest];  
 
-	leerRegistros();
+	logicaRegistros();
     printf("\n");
     return 1;
 }
@@ -328,7 +325,7 @@ void primeraLlamada(){
   unsigned char primeraLlamada[100];
     strcpy(primeraLlamada, ".");
     infoConsulta.nroConsulta=ns_t_ns;
-    int errorSocket = buscarIPporNombre(primeraLlamada); 
+    int errorSocket = realizarConsulta(primeraLlamada); 
     if (errorSocket == 0)
        exit(0);
 }
@@ -362,7 +359,7 @@ void consultaIterativa(unsigned char *host, int qtype){
     dns->ans_count = 0; 
     while (ntohs(dns->ans_count) == 0 && corte==0){
         infoConsulta.nroConsulta=qtype;
-        buscarIPporNombre(host);
+        realizarConsulta(host);
         if (ntohs(dns->add_count)==0 && (ntohs(dns->ans_count)==0)&& corte==0)
             {
                 asignarServidorAuxiliar(servidorDeAuthoritive);

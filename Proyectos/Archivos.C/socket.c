@@ -1,14 +1,14 @@
 #include "../Archivos.H/socket.h"
 
-/* *
+/**
 * Metodo encargado de la creacion del socket con su correspondiente TIMEOUT
 * Retorna -1 en caso de que ocurra un error. Caso contrario, retorna el tamanio del socket
 * Parametros: 
-* buf: buffer...!!!!
+* buf: Se utiliza para almacenar la respuesta del socket
 * tamanioMensajeSocket: tamano del socket
-* dest: estructura ...!!!!
-*/
-int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sockaddr_in dest){
+* dest: estructura de tipo sockaddr_in
+**/
+int crearSocket( unsigned char buf[512], int tamanioMensajeSocket, struct sockaddr_in dest){
     int socketDNS;
     socketDNS = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	tamanioMensajeSocket+=sizeof(struct QUESTION);
@@ -39,7 +39,6 @@ int crearSocket( unsigned char buf[65536], int tamanioMensajeSocket, struct sock
         perror("Ocurrio un error");
         return -1;
     }
-
-    
+   
     return tamanioDest;
 }
