@@ -37,7 +37,7 @@ int evaluarIngreso(char* argv[], int argc);
 int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 	char* parametroServidor=(char*)malloc(100);
 	if (cantParametros > 3){
-		parametroServidor = parametroParaEvaluar[3];
+		strcpy(parametroServidor, parametroParaEvaluar[3]);
 		if (parametroServidor[0] == '@'){
 			evaluarPuerto(parametroServidor);
 			return 0;
@@ -46,6 +46,7 @@ int buscarServidorYPuerto(char* parametroParaEvaluar[], int cantParametros){
 	/*Si el usuario no ingreso servidor (ni puerto) se le asigna los valores por defecto */
 	parametros.servidor = "";
 	parametros.puerto = "";
+	free(parametroServidor);
 	return 1;
 }
 
@@ -82,12 +83,14 @@ void asignarServidorConPuerto(char parametroServidor[], int posicionComienzoPuer
 
 	//El puerto comienza donde termina el servidor
 	int longitudServidor = posicionComienzoPuerto;
-	parametros.puerto = parametroServidor+posicionComienzoPuerto;
+	strcpy(parametros.puerto, parametroServidor+posicionComienzoPuerto);
 
 	//Asigno en parametros.servidor el valor correspondiente ingresado por el usuario
 	//Como el primer caracter ingresado es @, hacemos el +1
 	strncpy(parametros.servidor, parametroServidor, posicionComienzoPuerto-1);
-	parametros.servidor = parametros.servidor+1;
+	strcpy(parametros.servidor, parametros.servidor+1);
+
+
 }
 
 /**

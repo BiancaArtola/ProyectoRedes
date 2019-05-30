@@ -214,7 +214,8 @@ void logicaAnswer(int i, int finalizar){
         answers[i].resource=(struct R_DATA*)(reader);
         reader=reader+sizeof(struct R_DATA);    
         answers[i].rdata= (unsigned char*)malloc(ntohs(answers[i].resource->data_len));
-        mostrarAnswers(i, finalizar);      
+        mostrarAnswers(i, finalizar);     
+      
     }
 }
 
@@ -302,7 +303,7 @@ int buscarIPporNombre(unsigned char* host){
     tamanioMensajeSocket+=(strlen((const char*)qname) + 1);
     qinfo =(struct QUESTION*)&buf[tamanioMensajeSocket];	
     qinfo->qtype = htons(infoConsulta.nroConsulta); //Tipo de consulta
-    qinfo->qclass = htons(VALOR_CLASS_IN); 
+    qinfo->qclass = htons(ns_c_in); 
 
     int tamanioDest = crearSocket(buf, tamanioMensajeSocket, dest);
    
