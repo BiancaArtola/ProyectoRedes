@@ -3,25 +3,24 @@
 #include<stdlib.h>
 
 struct DNS_HEADER{
-    unsigned short id; // identification number
-    
-	//LENGTH EN BITS
-    unsigned char rd :1; // recursion desired
-    unsigned char tc :1; // truncated message
-    unsigned char aa :1; // authoritive answer
-    unsigned char opcode :4; // purpose of message
-    unsigned char qr :1; // query/response flag
+    unsigned short id;
 
-    unsigned char rcode :4; // response code
-    unsigned char cd :1; // checking disabled
-    unsigned char ad :1; // authenticated data
-    unsigned char z :1; // its z! reserved
-    unsigned char ra :1; // recursion available
+    unsigned char rd :1;
+    unsigned char tc :1; 
+    unsigned char aa :1; 
+    unsigned char opcode :4; 
+    unsigned char qr :1;
 
-    unsigned short q_count; // number of question entries
-    unsigned short ans_count; // number of answer entries
-    unsigned short auth_count; // number of authority entries
-    unsigned short add_count; // number of resource entries
+    unsigned char rcode :4; 
+    unsigned char cd :1; 
+    unsigned char ad :1; 
+    unsigned char z :1; 
+    unsigned char ra :1; 
+
+    unsigned short q_count; 
+    unsigned short ans_count; 
+    unsigned short auth_count; 
+    unsigned short add_count; 
 };
 void cambiarAFormatoDNS(unsigned char* dns,unsigned char* host);
 void asignarPropiedadesDNS(struct DNS_HEADER *dns, int bitRecursion);
