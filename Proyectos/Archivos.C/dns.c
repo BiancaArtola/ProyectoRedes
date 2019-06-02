@@ -352,6 +352,11 @@ void asignarServidorAuxiliar(unsigned char* servidor)
  * */
 void consultaIterativa(unsigned char *host, int qtype){
      primeraLlamada();
+     if ((ntohs(dns->add_count)==0) && (ntohs(dns->ans_count)==0) && (ntohs(dns->auth_count)==0))
+     {
+		 perror("No es posible realizar la consulta, por favor intente nuevamente");
+		 exit (1);
+	 }
      if (ntohs(dns->add_count)==0)
      {
        asignarServidorAuxiliar(servidorDeAnswer);
